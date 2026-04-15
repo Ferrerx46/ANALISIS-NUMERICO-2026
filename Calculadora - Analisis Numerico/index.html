@@ -1,0 +1,189 @@
+﻿<!DOCTYPE html>
+<html lang="es">
+<head>
+    <meta charset="UTF-8">
+    <title>Calculadora Numérica</title>
+    <link rel="stylesheet" href="styles.css">
+
+    <!-- GeoGebra -->
+    <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+</head>
+<body>
+
+    <div class="container">
+
+        <!-- PANEL IZQUIERDO -->
+        <div class="sidebar">
+            <h2>Métodos</h2>
+
+            <label>Método</label>
+            <select id="metodo">
+                <option value="Biseccion">Bisección</option>
+                <option value="ReglaFalsa">Regla Falsa</option>
+                <option value="Secante">Secante</option>
+                <option value="Tangente">Tangente</option>
+            </select>
+
+            <label>Función</label>
+            <input type="text" id="funcion" placeholder="x*x - 4">
+
+            <label>Xi</label>
+            <input type="number" id="xi" value="-5">
+
+            <label>Xd</label>
+            <input type="number" id="xd" value="5">
+
+            <label>Iteraciones</label>
+            <input type="number" id="iteraciones" value="100">
+
+            <label>Tolerancia</label>
+            <input type="number" id="tolerancia" step="0.0001" value="0.0001">
+
+            <button onclick="calcular()">Calcular</button>
+        </div>
+
+        <!-- CONTENIDO -->
+        <div class="main">
+
+            <h1>UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
+
+            <div class="content">
+
+                <!-- RESULTADOS -->
+                <div class="card">
+                    <h3 id="tituloMetodo">Método</h3>
+                    <p class="funcion" id="fx">f(x)</p>
+
+                    <div class="dato">
+                        <span>Iteraciones</span>
+                        <span id="it">0</span>
+                    </div>
+
+                    <div class="dato">
+                        <span>Error</span>
+                        <span id="error">0</span>
+                    </div>
+
+                    <div class="dato">
+                        <span>Raíz</span>
+                        <span id="raiz">0</span>
+                    </div>
+
+                    <div class="dato">
+                        <span>Converge</span>
+                        <span id="conv">-</span>
+                    </div>
+                </div>
+
+                <!-- GRAFICO -->
+                <div class="grafico">
+                    <div id="ggb-element"></div>
+                </div>
+
+            </div>
+
+        </div>
+
+    </div>
+
+    <script>
+        let app;
+
+        // Inicializar GeoGebra
+        window.onload = () => {
+            app = new GGBApplet({
+                appName: "graphing",
+                width: 600,
+                height: 400,
+                showToolBar: false,
+                showAlgebraInput: false,
+                showMenuBar: false
+            }, true);
+
+            app.inject('ggb-element');
+        };
+
+        // Enviar datos a C#
+        function calcular() {
+            // Truco: reemplazamos la coma por punto antes de convertir a número
+            const getNum = (id) => {
+                let val = document.getElementById(id).value.toString().replace(",", ".");
+                return parseFloat(val);
+            };
+
+            const data = {
+                funcion: document.getElementById("funcion").value,
+                xi: getNum("xi"),
+                xd: getNum("xd"),
+                iteraciones: parseInt(document.getElementById("iteraciones").value),
+                tolerancia: getNum("tolerancia"),
+                metodo: document.getElementById("metodo").value
+            };
+
+            window.chrome.webview.postMessage(data);
+        }
+
+        // Recibir desde C#
+        // Recibir desde C#
+        window.chrome.webview.addEventListener('message', event => {
+            const d = event.data;
+
+            // UI
+            document.getElementById("fx").innerText = d.funcion;
+            document.getElementById("it").innerText = d.iteraciones;
+            document.getElementById("error").innerText = d.error;
+            document.getElementById("raiz").innerText = d.raiz;
+            document.getElementById("conv").innerText = d.converge ? "Sí" : "No";
+
+            // MOSTRAR EL MENSAJE SI EL MÉTODO FALLA
+            if (!d.converge && d.mensaje) {
+                document.getElementById("tituloMetodo").innerText = d.metodo + " ⚠️ (" + d.mensaje + ")";
+            } else {
+                document.getElementById("tituloMetodo").innerText = d.metodo;
+            }
+
+            // Graficar
+            graficar(d.funcion, d.raiz, d.xi, d.xd, d.metodo);
+        });
+
+        // Convertir formato C# → GeoGebra
+        function convertirFuncion(fx) {
+            return fx.replace(/\*\*/g, "^").replace(/\*/g, "*");
+        }
+
+        // Graficar en GeoGebra
+        function graficar(funcion, raiz, xi, xd, metodo) {
+            let ggb = app.getAppletObject();
+            ggb.reset();
+
+            // GeoGebra solo entiende puntos, nunca comas
+            let fx = funcion.replace(/,/g, ".");
+
+            // Dibujar la función y el eje X
+            ggb.evalCommand(`f(x) = ${fx}`);
+            ggb.evalCommand(`y = 0`);
+
+            // Puntos A, B y C (siempre en inglés)
+            if (raiz !== null && !isNaN(raiz)) {
+                ggb.evalCommand(`A = (${raiz}, 0)`);
+                ggb.setPointStyle("A", 1);
+            }
+
+            ggb.evalCommand(`B = (${xi}, 0)`);
+            ggb.evalCommand(`C = (${xd}, 0)`);
+            ggb.evalCommand(`Segment(B, C)`); // Segmento -> Segment
+
+            // Comandos de métodos (en inglés)
+            if (metodo === "Secante") {
+                ggb.evalCommand(`Line(( ${xi}, f(${xi}) ), ( ${xd}, f(${xd}) ))`);
+            }
+
+            if (metodo === "Tangente" && !isNaN(raiz)) {
+                // Tangente -> Tangent
+                ggb.evalCommand(`T = Tangent( (${raiz}, f(${raiz}) ), f)`);
+            }
+        }
+    </script>
+
+</body>
+</html>
