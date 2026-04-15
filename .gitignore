@@ -1,0 +1,22 @@
+## Visual Studio Temp Files
+.vs/
+[Bb]in/
+[Oo]bj/
+*.exe
+*.dll
+*.pdb
+*.suo
+*.user
+*.userosscache
+*.sln.docstates
+
+## WebView2 (lo que te está dando problemas)
+*.WebView2/
+EBWebView/
+
+## NuGet Packages
+*.nupkg
+packages/
+
+## Publish output
+app.publish/
