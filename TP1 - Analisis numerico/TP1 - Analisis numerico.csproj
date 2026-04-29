@@ -60,6 +60,8 @@
     <Compile Include="MetodosCerrados.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
     <Compile Include="ResultadoMetodo.cs" />
+    <Compile Include="ResultadoSistema.cs" />
+    <Compile Include="SistemaDeEcuaciones.cs" />
   </ItemGroup>
   <ItemGroup>
     <WCFMetadata Include="Connected Services\" />
