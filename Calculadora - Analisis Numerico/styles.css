@@ -175,3 +175,55 @@
     outline: 2px solid #457b9d;
     background-color: #fff;
 }
+
+/* --- PANEL DE SISTEMAS COMPACTO (ROJO) --- */
+.panel-sistemas {
+    width: 320px; /* Igual que la .card de raíces */
+    background: #e63946; /* El mismo rojo */
+    padding: 25px;
+    border-radius: 15px;
+    color: white;
+    box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+    align-self: flex-start; /* No se estira hacia abajo */
+    display: flex;
+    flex-direction: column;
+}
+
+    .panel-sistemas h2 {
+        font-size: 18px;
+        margin-top: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        padding-bottom: 10px;
+        margin-bottom: 15px;
+    }
+
+.var-row {
+    display: flex;
+    justify-content: space-between;
+    margin-bottom: 10px;
+    font-family: 'Segoe UI', sans-serif;
+    font-size: 16px; /* Tamaño más normal */
+    border-bottom: 1px solid rgba(255,255,255,0.1);
+    padding-bottom: 5px;
+}
+
+.var-name {
+    font-weight: bold;
+    color: rgba(255,255,255,0.9);
+}
+
+.var-value {
+    font-family: 'Courier New', monospace;
+    font-weight: bold;
+    color: #ffffff;
+}
+
+.sys-info {
+    margin-top: 15px;
+    font-size: 13px;
+    color: rgba(255,255,255,0.8);
+    line-height: 1.5;
+    background: rgba(0,0,0,0.1);
+    padding: 10px;
+    border-radius: 8px;
+}

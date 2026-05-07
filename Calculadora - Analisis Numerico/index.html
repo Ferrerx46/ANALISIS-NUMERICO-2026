@@ -20,8 +20,8 @@
 
             <label>Iteraciones / Tolerancia</label>
             <div style="display:flex; gap:5px">
-                <input type="number" id="iteraciones" value="100" style="width:50%">
-                <input type="number" id="tolerancia" step="0.0001" value="0.0001" style="width:50%">
+                <input type="text" id="iteraciones" value="100" style="width:50%">
+                <input type="text" id="tolerancia" step="0.0001" value="0.0001" style="width:50%">
             </div>
 
             <div id="form-raices">
@@ -36,8 +36,8 @@
                 <input type="text" id="funcion" placeholder="x*x - 4">
                 <label>Xi / Xd</label>
                 <div style="display:flex; gap:5px">
-                    <input type="number" id="xi" value="-5" style="width:50%">
-                    <input type="number" id="xd" value="5" style="width:50%">
+                    <input type="text" id="xi" value="-5" style="width:50%">
+                    <input type="text" id="xd" value="5" style="width:50%">
                 </div>
             </div>
 
@@ -61,7 +61,7 @@
             <h1 id="tituloPrincipal">UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
 
             <div class="content">
-                <div class="card">
+                <div class="card" id="card-raices">
                     <h3 id="tituloMetodo">Método</h3>
                     <p class="funcion" id="fx">f(x)</p>
 
@@ -71,8 +71,12 @@
                     <div class="dato"><span>Converge</span><span id="conv">-</span></div>
                 </div>
 
-                <div class="grafico">
+                <div class="grafico" id="grafico-raices">
                     <div id="ggb-element"></div>
+                </div>
+
+                <div class="panel-sistemas" id="panel-sistemas" style="display:none;">
+                    <h2 style="color: #457b9d; font-weight: normal;">Esperando cálculo...</h2>
                 </div>
             </div>
         </div>
@@ -98,9 +102,14 @@
             const unidad = document.getElementById("unidadSeleccionada").value;
             const raicesVis = unidad === "raices";
 
+            // Mostrar/Ocultar Menús laterales
             document.getElementById("form-raices").style.display = raicesVis ? "block" : "none";
             document.getElementById("form-sistemas").style.display = raicesVis ? "none" : "block";
-            document.querySelector(".grafico").style.display = raicesVis ? "block" : "none";
+
+            // Mostrar/Ocultar Vistas de contenido
+            document.getElementById("card-raices").style.display = raicesVis ? "block" : "none";
+            document.getElementById("grafico-raices").style.display = raicesVis ? "flex" : "none";
+            document.getElementById("panel-sistemas").style.display = raicesVis ? "none" : "flex";
 
             document.getElementById("tituloPrincipal").innerText = raicesVis
                 ? "UNIDAD 1 – RAÍCES DE FUNCIONES"
@@ -118,7 +127,7 @@
             for (let i = 0; i < n; i++) {
                 for (let j = 0; j <= n; j++) {
                     const input = document.createElement("input");
-                    input.type = "number";
+                    input.type = "text";
                     input.className = "matrix-input" + (j === n ? " col-indep" : "");
                     input.id = `m_${i}_${j}`;
                     input.value = "0";
@@ -149,7 +158,13 @@
                 for (let i = 0; i < n; i++) {
                     let fila = [];
                     for (let j = 0; j <= n; j++) {
-                        fila.push(parseFloat(document.getElementById(`m_${i}_${j}`).value));
+                        fila.push(
+                            parseFloat(
+                                document.getElementById(`m_${i}_${j}`)
+                                    .value
+                                    .replace(",", ".")
+                            )
+                        );
                     }
                     matriz.push(fila);
                 }
@@ -166,16 +181,42 @@
 
         window.chrome.webview.addEventListener('message', event => {
             const d = event.data;
-            document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
-            document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
-            document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
-            document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
 
             if (d.tipoAccion === "SISTEMA" || d.Soluciones) {
+                // --- LÓGICA DE DIBUJADO PARA SISTEMAS ---
                 const sols = d.Soluciones || d.soluciones;
-                document.getElementById("fx").innerText = "Resultado del Sistema";
-                document.getElementById("raiz").innerText = sols.map((v, i) => `X${i + 1}: ${v.toFixed(4)}`).join(" | ");
+                // Array para nombrar las incógnitas como en la imagen (x, y, z)
+                const variables = ['x', 'y', 'z', 'w', 'v', 'u'];
+
+                let htmlSistemas = `<h2>Resultados: ${d.Metodo || d.metodo}</h2>`;
+
+                sols.forEach((val, i) => {
+                    let varName = i < variables.length ? variables[i] : `x${i + 1}`;
+                    htmlSistemas += `
+                        <div class="var-row">
+                            <span class="var-name">${varName.toUpperCase()}</span>
+                            <span class="var-value">${val.toFixed(6)}</span>
+                        </div>
+    `;
+                });
+
+                // Agregamos la información complementaria abajo
+                htmlSistemas += `
+                <div class="sys-info">
+                    <strong>It:</strong> ${d.Iteraciones || d.iteraciones} | 
+                    <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
+                    <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
+                </div>
+`;
+
+                document.getElementById("panel-sistemas").innerHTML = htmlSistemas;
+
             } else {
+                // --- LÓGICA DE DIBUJADO PARA RAÍCES ---
+                document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
+                document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
+                document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
+                document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
                 document.getElementById("fx").innerText = d.funcion;
                 document.getElementById("raiz").innerText = d.raiz;
                 graficar(d.funcion, d.raiz, d.xi, d.xd, d.metodo);
