@@ -10,14 +10,14 @@ namespace TP1___Analisis_numerico
 
     public class SistemasDeEcuaciones
     {
-        // MÉTODO: GAUSS-JORDAN
+        // MÉTODO: GAUSS-JORDAN CORREGIDO
         public ResultadoSistema ResolverGaussJordan(double[,] matrizOriginal, int dimension)
         {
             double[,] matriz = (double[,])matrizOriginal.Clone();
             var resultado = new ResultadoSistema
             {
                 Metodo = "Gauss-Jordan",
-                Iteraciones = 1 // Es un método directo, siempre es 1
+                Iteraciones = 1
             };
 
             try
@@ -33,7 +33,7 @@ namespace TP1___Analisis_numerico
                         return resultado;
                     }
 
-                    // Hacer 1 el pivote
+                    // Hacer 1 el pivote (Bucle para recorrer las columnas de la fila actual)
                     for (int col = 0; col < dimension + 1; col++)
                         matriz[rowDiag, col] /= coeficienteDiagonal;
 
@@ -42,9 +42,14 @@ namespace TP1___Analisis_numerico
                     {
                         if (rowDiag != row)
                         {
+                            // ¡AQUÍ ESTABA EL ERROR! El coeficiente a hacer cero es matriz[row, rowDiag]
                             double coeficienteCero = matriz[row, rowDiag];
+
+                            // Aplicar la fórmula: filaActual = filaActual - (coeficienteCero * filaPivote)
                             for (int col = 0; col < dimension + 1; col++)
-                                matriz[row, col] -= coeficienteCero * matriz[rowDiag, col];
+                            {
+                                matriz[row, col] -= (coeficienteCero * matriz[rowDiag, col]);
+                            }
                         }
                     }
                 }

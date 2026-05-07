@@ -4,15 +4,11 @@
     <meta charset="UTF-8">
     <title>Calculadora Numérica</title>
     <link rel="stylesheet" href="styles.css">
-
-    <!-- GeoGebra -->
     <script src="https://www.geogebra.org/apps/deployggb.js"></script>
 </head>
 <body>
 
     <div class="container">
-
-        <!-- PANEL IZQUIERDO -->
         <div class="sidebar">
             <h2>Unidades</h2>
             <select id="unidadSeleccionada" onchange="cambiarUnidad()">
@@ -21,6 +17,12 @@
             </select>
 
             <hr>
+
+            <label>Iteraciones / Tolerancia</label>
+            <div style="display:flex; gap:5px">
+                <input type="number" id="iteraciones" value="100" style="width:50%">
+                <input type="number" id="tolerancia" step="0.0001" value="0.0001" style="width:50%">
+            </div>
 
             <div id="form-raices">
                 <label>Método</label>
@@ -55,54 +57,30 @@
             <button onclick="calcular()" style="margin-top:20px;">Calcular</button>
         </div>
 
-        <!-- CONTENIDO -->
         <div class="main">
-
-            <h1>UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
+            <h1 id="tituloPrincipal">UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
 
             <div class="content">
-
-                <!-- RESULTADOS -->
                 <div class="card">
                     <h3 id="tituloMetodo">Método</h3>
                     <p class="funcion" id="fx">f(x)</p>
 
-                    <div class="dato">
-                        <span>Iteraciones</span>
-                        <span id="it">0</span>
-                    </div>
-
-                    <div class="dato">
-                        <span>Error</span>
-                        <span id="error">0</span>
-                    </div>
-
-                    <div class="dato">
-                        <span>Raíz</span>
-                        <span id="raiz">0</span>
-                    </div>
-
-                    <div class="dato">
-                        <span>Converge</span>
-                        <span id="conv">-</span>
-                    </div>
+                    <div class="dato"><span>Iteraciones</span><span id="it">0</span></div>
+                    <div class="dato"><span>Error</span><span id="error">0</span></div>
+                    <div class="dato"><span>Raíz / Solución</span><span id="raiz">0</span></div>
+                    <div class="dato"><span>Converge</span><span id="conv">-</span></div>
                 </div>
 
-                <!-- GRAFICO -->
                 <div class="grafico">
                     <div id="ggb-element"></div>
                 </div>
-
             </div>
-
         </div>
-
     </div>
 
     <script>
         let app;
 
-        // 1. Inicialización
         window.onload = () => {
             app = new GGBApplet({
                 appName: "graphing",
@@ -113,19 +91,22 @@
                 showMenuBar: false
             }, true);
             app.inject('ggb-element');
-
-            // Generar una matriz inicial de 3x3 por defecto
             crearGrillaMatriz();
         };
 
-        // 2. Lógica de UI (Cambio de Unidad y Grilla)
         function cambiarUnidad() {
             const unidad = document.getElementById("unidadSeleccionada").value;
-            document.getElementById("form-raices").style.display = unidad === "raices" ? "block" : "none";
-            document.getElementById("form-sistemas").style.display = unidad === "sistemas" ? "block" : "none";
-            document.querySelector(".grafico").style.display = unidad === "raices" ? "block" : "none";
+            const raicesVis = unidad === "raices";
 
-            if (unidad === "sistemas") crearGrillaMatriz();
+            document.getElementById("form-raices").style.display = raicesVis ? "block" : "none";
+            document.getElementById("form-sistemas").style.display = raicesVis ? "none" : "block";
+            document.querySelector(".grafico").style.display = raicesVis ? "block" : "none";
+
+            document.getElementById("tituloPrincipal").innerText = raicesVis
+                ? "UNIDAD 1 – RAÍCES DE FUNCIONES"
+                : "UNIDAD 2 – SISTEMAS DE ECUACIONES";
+
+            if (!raicesVis) crearGrillaMatriz();
         }
 
         function crearGrillaMatriz() {
@@ -146,26 +127,22 @@
             }
         }
 
-        // 3. Enviar datos a C#
         function calcular() {
             const unidad = document.getElementById("unidadSeleccionada").value;
-
-            const getNum = (id) => {
-                let val = document.getElementById(id).value.toString().replace(",", ".");
-                return parseFloat(val);
-            };
+            const iter = parseInt(document.getElementById("iteraciones").value);
+            const tol = parseFloat(document.getElementById("tolerancia").value.toString().replace(",", "."));
 
             if (unidad === "raices") {
-                const data = {
+                const getNum = (id) => parseFloat(document.getElementById(id).value.toString().replace(",", "."));
+                window.chrome.webview.postMessage({
                     tipoAccion: "RAICES",
                     funcion: document.getElementById("funcion").value,
                     xi: getNum("xi"),
                     xd: getNum("xd"),
-                    iteraciones: parseInt(document.getElementById("iteraciones").value),
-                    tolerancia: getNum("tolerancia"),
+                    iteraciones: iter,
+                    tolerancia: tol,
                     metodo: document.getElementById("metodo").value
-                };
-                window.chrome.webview.postMessage(data);
+                });
             } else {
                 const n = parseInt(document.getElementById("nMatriz").value);
                 let matriz = [];
@@ -176,74 +153,46 @@
                     }
                     matriz.push(fila);
                 }
-                const data = {
+                window.chrome.webview.postMessage({
                     tipoAccion: "SISTEMA",
                     metodo: document.getElementById("metodoMatriz").value,
                     dimension: n,
+                    iteraciones: iter,   // <--- Agregado
+                    tolerancia: tol,     // <--- Agregado
                     matriz: matriz
-                };
-                window.chrome.webview.postMessage(data);
+                });
             }
         }
 
-        // 4. Recibir desde C# (Unificado)
         window.chrome.webview.addEventListener('message', event => {
             const d = event.data;
+            document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
+            document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
+            document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
+            document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
 
-            // Caso A: Es un resultado de SISTEMAS (Matriz)
-            if (d.Soluciones || d.soluciones) {
+            if (d.tipoAccion === "SISTEMA" || d.Soluciones) {
                 const sols = d.Soluciones || d.soluciones;
-                document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
-                document.getElementById("fx").innerText = "Sistema de Ecuaciones";
-                document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
-                document.getElementById("error").innerText = (d.Error || d.error).toFixed(6);
-                document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
-
-                // Formatear resultados: X1: 2.00 | X2: 5.00 ...
-                let resText = sols.map((val, idx) => `X${idx + 1}: ${val.toFixed(4)}`).join(" | ");
-                document.getElementById("raiz").innerText = resText;
-            }
-            // Caso B: Es un resultado de RAÍCES
-            else {
+                document.getElementById("fx").innerText = "Resultado del Sistema";
+                document.getElementById("raiz").innerText = sols.map((v, i) => `X${i + 1}: ${v.toFixed(4)}`).join(" | ");
+            } else {
                 document.getElementById("fx").innerText = d.funcion;
-                document.getElementById("it").innerText = d.iteraciones;
-                document.getElementById("error").innerText = d.error;
                 document.getElementById("raiz").innerText = d.raiz;
-                document.getElementById("conv").innerText = d.converge ? "Sí" : "No";
-
-                if (!d.converge && d.mensaje) {
-                    document.getElementById("tituloMetodo").innerText = d.metodo + " ⚠️ (" + d.mensaje + ")";
-                } else {
-                    document.getElementById("tituloMetodo").innerText = d.metodo;
-                }
                 graficar(d.funcion, d.raiz, d.xi, d.xd, d.metodo);
             }
         });
 
-        // 5. GeoGebra Helpers
         function graficar(funcion, raiz, xi, xd, metodo) {
             let ggb = app.getAppletObject();
+            if (!ggb) return;
             ggb.reset();
             let fx = funcion.replace(/,/g, ".");
             ggb.evalCommand(`f(x) = ${fx}`);
-            ggb.evalCommand(`y = 0`);
-
-            if (raiz !== null && !isNaN(raiz)) {
-                ggb.evalCommand(`A = (${raiz}, 0)`);
-                ggb.setPointStyle("A", 1);
-            }
+            if (raiz !== null && !isNaN(raiz)) ggb.evalCommand(`A = (${raiz}, 0)`);
             ggb.evalCommand(`B = (${xi}, 0)`);
             ggb.evalCommand(`C = (${xd}, 0)`);
             ggb.evalCommand(`Segment(B, C)`);
-
-            if (metodo === "Secante") {
-                ggb.evalCommand(`Line(( ${xi}, f(${xi}) ), ( ${xd}, f(${xd}) ))`);
-            }
-            if (metodo === "Tangente" && !isNaN(raiz)) {
-                ggb.evalCommand(`T = Tangent( (${raiz}, f(${raiz}) ), f)`);
-            }
         }
     </script>
-
 </body>
 </html>

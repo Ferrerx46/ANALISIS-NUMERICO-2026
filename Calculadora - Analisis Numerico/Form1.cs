@@ -41,7 +41,6 @@ namespace Calculadora___Analisis_Numerico
             var root = doc.RootElement;
 
             // 1. Detectar qué tipo de operación es
-            // Usamos GetProperty y TryGetProperty para no romper si falta alguna
             string tipoAccion = root.TryGetProperty("tipoAccion", out var t) ? t.GetString() : "RAICES";
 
             var opcionesSer = new System.Text.Json.JsonSerializerOptions
@@ -54,6 +53,11 @@ namespace Calculadora___Analisis_Numerico
                 // --- LÓGICA UNIDAD 2: SISTEMAS ---
                 int dim = root.GetProperty("dimension").GetInt32();
                 string metodo = root.GetProperty("metodo").GetString();
+
+                // CAPTURA DE VALORES DESDE EL FRONT
+                // Si por alguna razón no vinieran, les dejamos un valor por defecto (Fallback)
+                int iteracionesMax = root.TryGetProperty("iteraciones", out var iProp) ? iProp.GetInt32() : 100;
+                double tolerancia = root.TryGetProperty("tolerancia", out var tProp) ? tProp.GetDouble() : 0.0001;
 
                 // Parsear la matriz desde el JSON
                 double[,] matrizCsharp = new double[dim, dim + 1];
@@ -76,18 +80,33 @@ namespace Calculadora___Analisis_Numerico
                 }
                 else // Gauss-Seidel
                 {
-                    // Podrías sacar la tolerancia del JSON si la agregas al front
-                    resultadoSist = mSistemas.ResolverGaussSeidel(matrizCsharp, dim, 0.0001);
+                    // Usamos la variable 'tolerancia' que viene del Front-End
+                    resultadoSist = mSistemas.ResolverGaussSeidel(matrizCsharp, dim, tolerancia);
+
+                    // NOTA: Si querés limitar las iteraciones con 'iteracionesMax' en Gauss-Seidel, 
+                    // vas a tener que pasarle esa variable a tu método en la clase SistemasDeEcuaciones.
                 }
+
+                // Creamos un objeto anónimo para meterle el "tipoAccion" y que el Front sepa procesarlo sin fallar
+                var respuestaSistema = new
+                {
+                    tipoAccion = "SISTEMA",
+                    metodo = resultadoSist.Metodo,
+                    soluciones = resultadoSist.Soluciones,
+                    iteraciones = resultadoSist.Iteraciones,
+                    error = resultadoSist.Error,
+                    converge = resultadoSist.Converge,
+                    mensaje = resultadoSist.Mensaje
+                };
 
                 // Enviamos la respuesta de vuelta
                 webView21.CoreWebView2.PostWebMessageAsJson(
-                    System.Text.Json.JsonSerializer.Serialize(resultadoSist, opcionesSer)
+                    System.Text.Json.JsonSerializer.Serialize(respuestaSistema, opcionesSer)
                 );
             }
             else
             {
-                // --- LÓGICA UNIDAD 1: RAÍCES (Tu código original) ---
+                // --- LÓGICA UNIDAD 1: RAÍCES (Tu código original sin cambios) ---
                 string funcion = root.GetProperty("funcion").GetString();
                 double xi = root.GetProperty("xi").GetDouble();
                 double xd = root.GetProperty("xd").GetDouble();
@@ -109,6 +128,7 @@ namespace Calculadora___Analisis_Numerico
 
                 var respuestaRaices = new
                 {
+                    tipoAccion = "RAICES",
                     funcion = funcion,
                     raiz = resultado.Raiz,
                     iteraciones = resultado.Iteraciones,

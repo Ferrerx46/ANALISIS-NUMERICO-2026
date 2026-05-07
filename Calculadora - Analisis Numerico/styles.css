@@ -1,10 +1,8 @@
-﻿body 
-  
-
-{
+﻿body {
     margin: 0;
-    font-family: Arial, sans-serif;
+    font-family: 'Segoe UI', Arial, sans-serif;
     background-color: #f4f6f9;
+    color: #333;
 }
 
 .container {
@@ -14,87 +12,166 @@
 
 /* SIDEBAR */
 .sidebar {
-    width: 260px;
+    width: 280px;
     background: #ffffff;
     padding: 20px;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
+    overflow-y: auto;
 }
 
     .sidebar h2 {
         margin-bottom: 20px;
+        color: #1d3557;
     }
 
     .sidebar label {
         display: block;
-        margin-top: 10px;
-        font-size: 14px;
+        margin-top: 15px;
+        font-weight: bold;
+        font-size: 13px;
     }
 
-    .sidebar input {
+    .sidebar input, .sidebar select {
         width: 100%;
-        padding: 8px;
+        padding: 10px;
         margin-top: 5px;
-        border: 1px solid #ccc;
+        border: 1px solid #ddd;
         border-radius: 6px;
+        box-sizing: border-box; /* Evita que el padding ensanche el input */
     }
 
     .sidebar button {
-        margin-top: 20px;
+        margin-top: 25px;
         width: 100%;
-        padding: 10px;
+        padding: 12px;
         background-color: #1d3557;
         color: white;
         border: none;
         border-radius: 6px;
         cursor: pointer;
+        font-weight: bold;
+        transition: background 0.3s;
     }
+
+        .sidebar button:hover {
+            background-color: #457b9d;
+        }
+
+/* MATRIX STYLES */
+.matrix-container {
+    display: grid;
+    gap: 8px;
+    margin-top: 15px;
+    padding: 10px;
+    background: #f8f9fa;
+    border-radius: 8px;
+    border: 1px solid #eee;
+}
+
+.matrix-input {
+    width: 100% !important; /* Para que se ajuste al grid */
+    height: 35px;
+    text-align: center;
+    font-size: 12px;
+}
+
+.col-indep {
+    background-color: #e3f2fd;
+    border-color: #2196f3 !important;
+}
 
 /* MAIN */
 .main {
     flex: 1;
-    padding: 20px;
+    padding: 30px;
+    display: flex;
+    flex-direction: column;
 }
 
     .main h1 {
         text-align: center;
+        color: #1d3557;
+        margin-top: 0;
     }
 
-/* CONTENT */
 .content {
     display: flex;
     gap: 20px;
-    margin-top: 20px;
+    flex: 1;
 }
 
 /* CARD RESULTADOS */
 .card {
-    width: 300px;
-    background: #f28c8c;
-    padding: 20px;
-    border-radius: 12px;
+    width: 320px;
+    background: #e63946;
+    padding: 25px;
+    border-radius: 15px;
     color: white;
+    box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
+    align-self: flex-start;
 }
 
     .card h3 {
-        text-align: center;
+        margin-top: 0;
+        border-bottom: 1px solid rgba(255,255,255,0.3);
+        padding-bottom: 10px;
     }
 
 .funcion {
-    text-align: center;
-    font-size: 20px;
-    margin-bottom: 15px;
+    font-family: 'Courier New', monospace;
+    background: rgba(0,0,0,0.1);
+    padding: 10px;
+    border-radius: 5px;
 }
 
 .dato {
     display: flex;
     justify-content: space-between;
-    margin: 10px 0;
+    margin: 12px 0;
+    font-size: 14px;
 }
+
+    .dato span:last-child {
+        font-weight: bold;
+    }
 
 /* GRAFICO */
 .grafico {
     flex: 1;
     background: white;
-    border-radius: 12px;
-    padding: 20px;
+    border-radius: 15px;
+    padding: 15px;
+    box-shadow: 0 4px 15px rgba(0,0,0,0.05);
+    display: flex;
+    justify-content: center;
+    align-items: center;
+}
+
+#ggb-element {
+    border-radius: 10px;
+    overflow: hidden;
+}
+
+/* ... (mantiene tu CSS anterior) ... */
+
+.dato {
+    display: flex;
+    justify-content: space-between;
+    margin: 12px 0;
+    font-size: 14px;
+    gap: 10px; /* Separación entre label y valor */
+}
+
+/* Ajuste específico para que la raíz no desborde la tarjeta */
+#raiz {
+    text-align: right;
+    word-break: break-all;
+    max-width: 180px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
+
+.matrix-input:focus {
+    outline: 2px solid #457b9d;
+    background-color: #fff;
 }
