@@ -5,6 +5,42 @@
     <title>Calculadora Numérica</title>
     <link rel="stylesheet" href="styles.css">
     <script src="https://www.geogebra.org/apps/deployggb.js"></script>
+    <style>
+        /* Corrección 1: Mejoramos el campo visual de la matriz */
+        .matrix-container {
+            display: grid;
+            gap: 5px;
+            margin-top: 10px;
+            overflow-x: auto; /* Por si la matriz es muy grande */
+        }
+
+        .matrix-input {
+            width: 100%;
+            min-width: 70px; /* Asegura espacio para varios decimales */
+            padding: 8px 5px;
+            box-sizing: border-box;
+            font-size: 14px;
+            text-align: center;
+        }
+
+        .col-indep {
+            background-color: #f0f8ff;
+            border-left: 2px solid #333;
+            font-weight: bold;
+        }
+
+        .tabla-resumen {
+            width: 100%;
+            border-collapse: collapse;
+            margin-top: 15px;
+        }
+
+            .tabla-resumen th, .tabla-resumen td {
+                border: 1px solid #ccc;
+                padding: 8px;
+                text-align: center;
+            }
+    </style>
 </head>
 <body>
 
@@ -84,6 +120,9 @@
 
     <script>
         let app;
+        // Corrección 2: Variables dinámicas para el sistema original
+        let solucionOriginal = null;
+        let ultimaSolucion = null;
 
         window.onload = () => {
             app = new GGBApplet({
@@ -94,6 +133,7 @@
                 showAlgebraInput: false,
                 showMenuBar: false
             }, true);
+
             app.inject('ggb-element');
             crearGrillaMatriz();
         };
@@ -102,11 +142,9 @@
             const unidad = document.getElementById("unidadSeleccionada").value;
             const raicesVis = unidad === "raices";
 
-            // Mostrar/Ocultar Menús laterales
             document.getElementById("form-raices").style.display = raicesVis ? "block" : "none";
             document.getElementById("form-sistemas").style.display = raicesVis ? "none" : "block";
 
-            // Mostrar/Ocultar Vistas de contenido
             document.getElementById("card-raices").style.display = raicesVis ? "block" : "none";
             document.getElementById("grafico-raices").style.display = raicesVis ? "flex" : "none";
             document.getElementById("panel-sistemas").style.display = raicesVis ? "none" : "flex";
@@ -115,12 +153,19 @@
                 ? "UNIDAD 1 – RAÍCES DE FUNCIONES"
                 : "UNIDAD 2 – SISTEMAS DE ECUACIONES";
 
-            if (!raicesVis) crearGrillaMatriz();
+            if (!raicesVis) {
+                crearGrillaMatriz();
+            }
         }
 
         function crearGrillaMatriz() {
             const n = parseInt(document.getElementById("nMatriz").value);
             const contenedor = document.getElementById("contenedor-matriz");
+
+            // Reseteamos el sistema original guardado si cambian la dimensión
+            solucionOriginal = null;
+            ultimaSolucion = null;
+
             contenedor.style.gridTemplateColumns = `repeat(${n + 1}, 1fr)`;
             contenedor.innerHTML = "";
 
@@ -133,6 +178,20 @@
                     input.value = "0";
                     contenedor.appendChild(input);
                 }
+            }
+        }
+
+        // Función para guardar dinámicamente la matriz original
+        function fijarOriginal() {
+            if (ultimaSolucion) {
+                solucionOriginal = [...ultimaSolucion];
+                alert("¡Sistema original guardado exitosamente!\n\nAhora modificá algunos decimales en la matriz y volvé a hacer clic en 'Calcular' para ver la tabla comparativa del condicionamiento.");
+
+                // Refrescamos el panel para que muestre que ya hay un original
+                document.getElementById("panel-sistemas").innerHTML = `
+                        <h2 style="color: #457b9d;">Sistema Original Guardado</h2>
+                        <p>Modificá la matriz y calculá de nuevo para comparar.</p>
+                    `;
             }
         }
 
@@ -158,13 +217,7 @@
                 for (let i = 0; i < n; i++) {
                     let fila = [];
                     for (let j = 0; j <= n; j++) {
-                        fila.push(
-                            parseFloat(
-                                document.getElementById(`m_${i}_${j}`)
-                                    .value
-                                    .replace(",", ".")
-                            )
-                        );
+                        fila.push(parseFloat(document.getElementById(`m_${i}_${j}`).value.replace(",", ".")));
                     }
                     matriz.push(fila);
                 }
@@ -172,47 +225,122 @@
                     tipoAccion: "SISTEMA",
                     metodo: document.getElementById("metodoMatriz").value,
                     dimension: n,
-                    iteraciones: iter,   // <--- Agregado
-                    tolerancia: tol,     // <--- Agregado
+                    iteraciones: iter,
+                    tolerancia: tol,
                     matriz: matriz
                 });
             }
         }
 
+        // =====================================================
+        // RESPUESTA DESDE C#
+        // =====================================================
         window.chrome.webview.addEventListener('message', event => {
             const d = event.data;
 
             if (d.tipoAccion === "SISTEMA" || d.Soluciones) {
-                // --- LÓGICA DE DIBUJADO PARA SISTEMAS ---
                 const sols = d.Soluciones || d.soluciones;
-                // Array para nombrar las incógnitas como en la imagen (x, y, z)
-                const variables = ['x', 'y', 'z', 'w', 'v', 'u'];
+                ultimaSolucion = [...sols]; // Guardamos la solución de esta corrida
 
+                const variables = ['x', 'y', 'z', 'w', 'v', 'u'];
                 let htmlSistemas = `<h2>Resultados: ${d.Metodo || d.metodo}</h2>`;
 
+                // Resultados Principales
                 sols.forEach((val, i) => {
                     let varName = i < variables.length ? variables[i] : `x${i + 1}`;
                     htmlSistemas += `
-                        <div class="var-row">
-                            <span class="var-name">${varName.toUpperCase()}</span>
-                            <span class="var-value">${val.toFixed(6)}</span>
-                        </div>
-    `;
+                            <div class="var-row">
+                                <span class="var-name">${varName.toUpperCase()}</span>
+                                <span class="var-value">${val.toFixed(6)}</span>
+                            </div>
+                        `;
                 });
 
-                // Agregamos la información complementaria abajo
+                // Info General
                 htmlSistemas += `
-                <div class="sys-info">
-                    <strong>It:</strong> ${d.Iteraciones || d.iteraciones} | 
-                    <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
-                    <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
-                </div>
-`;
+                        <div class="sys-info" style="margin-bottom: 20px;">
+                            <strong>It:</strong> ${d.Iteraciones || d.iteraciones} |
+                            <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
+                            <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
+                        </div>
+                    `;
+
+                // Corrección 2: Lógica de la tabla NO hardcodeada
+                if (solucionOriginal && solucionOriginal.length === sols.length) {
+                    const originales = solucionOriginal;
+                    const modificados = sols;
+                    let diferenciaMaxima = 0;
+
+                    originales.forEach((valorOriginal, i) => {
+                        const diferencia = Math.abs(valorOriginal - modificados[i]);
+                        if (diferencia > diferenciaMaxima) {
+                            diferenciaMaxima = diferencia;
+                        }
+                    });
+
+                    let mensajeAnalisis = "";
+                    if (diferenciaMaxima > 1) {
+                        mensajeAnalisis = `El sistema presenta alta sensibilidad ante pequeñas perturbaciones, indicando un fuerte mal condicionamiento.`;
+                    } else if (diferenciaMaxima > 0.01) {
+                        mensajeAnalisis = `El sistema presenta sensibilidad moderada ante perturbaciones en los coeficientes.`;
+                    } else {
+                        mensajeAnalisis = `El sistema mantiene estabilidad numérica frente a pequeñas modificaciones.`;
+                    }
+
+                    htmlSistemas += `
+                            <h3 style="margin-top: 20px;">Análisis de Condicionamiento</h3>
+                            <table class="tabla-resumen">
+                                <thead>
+                                    <tr>
+                                        <th>Variable</th>
+                                        <th>Original</th>
+                                        <th>Modificado</th>
+                                        <th>Diferencia</th>
+                                    </tr>
+                                </thead>
+                                <tbody>
+                        `;
+
+                    originales.forEach((valorOriginal, i) => {
+                        const valorModificado = modificados[i];
+                        const diferencia = Math.abs(valorOriginal - valorModificado);
+                        let varName = i < variables.length ? variables[i].toUpperCase() : `X${i + 1}`;
+
+                        htmlSistemas += `
+                                    <tr>
+                                        <td><strong>${varName}</strong></td>
+                                        <td>${valorOriginal.toFixed(6)}</td>
+                                        <td>${valorModificado.toFixed(6)}</td>
+                                        <td style="color: ${diferencia > 0.1 ? 'red' : 'green'}; font-weight: bold;">
+                                            ${diferencia.toFixed(6)}
+                                        </td>
+                                    </tr>
+                            `;
+                    });
+
+                    htmlSistemas += `
+                                </tbody>
+                            </table>
+                            <div class="analisis" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #457b9d;">
+                                ${mensajeAnalisis}
+                            </div>
+                            <button onclick="fijarOriginal()" style="margin-top:20px; font-size: 12px; cursor: pointer;">
+                                Tomar este nuevo resultado como Original
+                            </button>
+                        `;
+                } else {
+                    // Si todavía NO guardaron un original, les damos la opción
+                    htmlSistemas += `
+                            <div style="margin-top: 25px; padding: 15px; border: 1px dashed #457b9d; border-radius: 5px; text-align: center;">
+                                <p style="margin-bottom: 10px; font-size: 14px;">Para analizar el condicionamiento, guardá este resultado como original. Luego modificá la matriz levemente y volvé a Calcular.</p>
+                                <button onclick="fijarOriginal()" style="cursor: pointer; background-color: #457b9d; color: white; border: none; padding: 8px 15px; border-radius: 4px;">Guardar como Sistema Original</button>
+                            </div>
+                        `;
+                }
 
                 document.getElementById("panel-sistemas").innerHTML = htmlSistemas;
-
             } else {
-                // --- LÓGICA DE DIBUJADO PARA RAÍCES ---
+                // ... Código de Raíces intacto ...
                 document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
                 document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
                 document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
@@ -223,13 +351,18 @@
             }
         });
 
+        // =====================================================
+        // GEOGEBRA
+        // =====================================================
         function graficar(funcion, raiz, xi, xd, metodo) {
             let ggb = app.getAppletObject();
             if (!ggb) return;
             ggb.reset();
             let fx = funcion.replace(/,/g, ".");
             ggb.evalCommand(`f(x) = ${fx}`);
-            if (raiz !== null && !isNaN(raiz)) ggb.evalCommand(`A = (${raiz}, 0)`);
+            if (raiz !== null && !isNaN(raiz)) {
+                ggb.evalCommand(`A = (${raiz}, 0)`);
+            }
             ggb.evalCommand(`B = (${xi}, 0)`);
             ggb.evalCommand(`C = (${xd}, 0)`);
             ggb.evalCommand(`Segment(B, C)`);

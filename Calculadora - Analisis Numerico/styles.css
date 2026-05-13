@@ -12,7 +12,7 @@
 
 /* SIDEBAR */
 .sidebar {
-    width: 280px;
+    width: 420px;
     background: #ffffff;
     padding: 20px;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
@@ -37,7 +37,7 @@
         margin-top: 5px;
         border: 1px solid #ddd;
         border-radius: 6px;
-        box-sizing: border-box; /* Evita que el padding ensanche el input */
+        box-sizing: border-box;
     }
 
     .sidebar button {
@@ -60,20 +60,29 @@
 /* MATRIX STYLES */
 .matrix-container {
     display: grid;
-    gap: 8px;
+    gap: 12px;
     margin-top: 15px;
-    padding: 10px;
+    padding: 15px;
     background: #f8f9fa;
     border-radius: 8px;
     border: 1px solid #eee;
+    overflow-x: auto; /* Permite scroll horizontal si hay muchos decimales */
 }
 
 .matrix-input {
-    width: 100% !important; /* Para que se ajuste al grid */
-    height: 35px;
+    width: 100% !important;
+    min-width: 90px;
+    height: 45px;
     text-align: center;
-    font-size: 12px;
+    font-size: 15px;
+    font-family: 'Courier New', monospace;
+    padding: 5px;
 }
+
+    .matrix-input:focus {
+        outline: 2px solid #457b9d;
+        background-color: #fff;
+    }
 
 .col-indep {
     background-color: #e3f2fd;
@@ -129,11 +138,20 @@
     justify-content: space-between;
     margin: 12px 0;
     font-size: 14px;
+    gap: 10px;
 }
 
     .dato span:last-child {
         font-weight: bold;
     }
+
+#raiz {
+    text-align: right;
+    word-break: break-all;
+    max-width: 180px;
+    font-family: 'Courier New', monospace;
+    font-size: 13px;
+}
 
 /* GRAFICO */
 .grafico {
@@ -152,45 +170,21 @@
     overflow: hidden;
 }
 
-/* ... (mantiene tu CSS anterior) ... */
-
-.dato {
-    display: flex;
-    justify-content: space-between;
-    margin: 12px 0;
-    font-size: 14px;
-    gap: 10px; /* Separación entre label y valor */
-}
-
-/* Ajuste específico para que la raíz no desborde la tarjeta */
-#raiz {
-    text-align: right;
-    word-break: break-all;
-    max-width: 180px;
-    font-family: 'Courier New', monospace;
-    font-size: 13px;
-}
-
-.matrix-input:focus {
-    outline: 2px solid #457b9d;
-    background-color: #fff;
-}
-
 /* --- PANEL DE SISTEMAS COMPACTO (ROJO) --- */
 .panel-sistemas {
-    width: 320px; /* Igual que la .card de raíces */
-    background: #e63946; /* El mismo rojo */
+    width: 700px;
+    max-width: 100%;
+    background: #e63946;
     padding: 25px;
     border-radius: 15px;
     color: white;
     box-shadow: 0 4px 15px rgba(230, 57, 70, 0.3);
-    align-self: flex-start; /* No se estira hacia abajo */
+    align-self: flex-start;
     display: flex;
     flex-direction: column;
 }
 
-    .panel-sistemas h2 {
-        font-size: 18px;
+    .panel-sistemas h2, .panel-sistemas h3 {
         margin-top: 0;
         border-bottom: 1px solid rgba(255,255,255,0.3);
         padding-bottom: 10px;
@@ -202,7 +196,7 @@
     justify-content: space-between;
     margin-bottom: 10px;
     font-family: 'Segoe UI', sans-serif;
-    font-size: 16px; /* Tamaño más normal */
+    font-size: 16px;
     border-bottom: 1px solid rgba(255,255,255,0.1);
     padding-bottom: 5px;
 }
@@ -227,3 +221,55 @@
     padding: 10px;
     border-radius: 8px;
 }
+
+.tabla-resumen {
+    width: 100%;
+    margin-top: 20px;
+    border-collapse: collapse;
+    background: white;
+    color: #333;
+    border-radius: 8px;
+    overflow: hidden;
+}
+
+    .tabla-resumen th {
+        background: #1d3557;
+        color: white;
+        padding: 10px;
+        font-size: 13px;
+    }
+
+    .tabla-resumen td {
+        padding: 8px;
+        text-align: center;
+        border-bottom: 1px solid #ddd;
+        font-family: 'Courier New', monospace;
+        font-size: 13px;
+    }
+
+.analisis {
+    margin-top: 15px;
+    padding: 12px;
+    background: rgba(0, 0, 0, 0.2);
+    border-left: 4px solid #ffffff;
+    border-radius: 6px;
+    font-size: 14px;
+    line-height: 1.5;
+}
+
+/* Botón especial para guardar original dentro del panel rojo */
+.btn-guardar {
+    margin-top: 20px;
+    padding: 10px;
+    background-color: #1d3557;
+    color: white;
+    border: none;
+    border-radius: 6px;
+    cursor: pointer;
+    font-weight: bold;
+    transition: background 0.3s;
+}
+
+    .btn-guardar:hover {
+        background-color: #112233;
+    }
