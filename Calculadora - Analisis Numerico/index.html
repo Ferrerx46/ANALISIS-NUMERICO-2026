@@ -76,6 +76,8 @@
             flex-grow: 1;
             padding: 30px;
             overflow-y: auto;
+            display: flex;
+            flex-direction: column;
         }
 
         /* Componentes */
@@ -110,6 +112,10 @@
             border-bottom: 1px solid #eee;
         }
 
+            .dato span:last-child {
+                font-weight: bold;
+            }
+
         .tabla-resumen {
             width: 100%;
             border-collapse: collapse;
@@ -125,6 +131,20 @@
             .tabla-resumen th {
                 background-color: #f8f9fa;
             }
+
+        .grafico {
+            flex: 1;
+            display: flex;
+            align-items: center;
+            justify-content: center;
+            overflow: hidden;
+        }
+
+        #ggb-element {
+            width: 100%;
+            height: 100%;
+            border-radius: 10px;
+        }
     </style>
 </head>
 <body>
@@ -141,10 +161,12 @@
 
             <hr>
 
-            <label>Configuración</label>
-            <div style="display:flex; gap:5px">
-                <input type="text" id="iteraciones" value="100" placeholder="Iteraciones">
-                <input type="text" id="tolerancia" value="0.0001" placeholder="Tolerancia">
+            <div id="panelConfiguracion">
+                <label>Configuración</label>
+                <div style="display:flex; gap:5px">
+                    <input type="text" id="iteraciones" value="100" placeholder="Iteraciones">
+                    <input type="text" id="tolerancia" value="0.0001" placeholder="Tolerancia">
+                </div>
             </div>
 
             <div id="form-raices">
@@ -194,103 +216,154 @@
                 <button type="button" class="btn-danger" onclick="limpiarPuntos()" style="background-color: #6c757d;">Limpiar todo</button>
             </div>
 
+            <div id="form-integracion" style="display:none;">
+                <label>Método de Integración</label>
+                <select id="metodoIntegracion" onchange="verificarIntegracionMultiple()">
+                    <option value="TrapeciosSimple">Trapecios Simple</option>
+                    <option value="TrapeciosMultiple">Trapecios Múltiple</option>
+                    <option value="Simpson1_3Simple">Simpson 1/3 Simple</option>
+                    <option value="SimpsonMultipleCombinado">Simpson 1/3 Múltiple / Combinado</option>
+                    <option value="Simpson3_8">Simpson 3/8</option>
+                </select>
+
+                <label>Función f(x)</label>
+                <input type="text" id="funcionInt" placeholder="1/x + x" value="1/x + x">
+
+                <label>Límites (Xi / Xd)</label>
+                <div style="display:flex; gap:5px">
+                    <input type="text" id="xiInt" value="0.5" placeholder="Xi">
+                    <input type="text" id="xdInt" value="3.5" placeholder="Xd">
+                </div>
+
+                <div id="contenedorNInt" style="display:none;">
+                    <label>Subintervalos (N)</label>
+                    <input type="number" id="nInt" value="4" min="1">
+                </div>
+            </div>
+
             <button onclick="calcular()" style="margin-top:20px; background-color: #e9c46a; color: #000;">CALCULAR</button>
         </div>
 
         <div class="main">
             <h1 id="tituloPrincipal">UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
+
             <div id="card-raices" class="card">
                 <h3 id="tituloMetodo">Método</h3>
-                <p id="fx">f(x)</p>
+                <p id="fx" style="background: #f1f3f5; padding: 10px; border-radius: 5px; font-family: monospace;">f(x)</p>
                 <div class="dato"><span>Iteraciones</span><span id="it">0</span></div>
                 <div class="dato"><span>Error</span><span id="error">0</span></div>
-                <div class="dato"><span>Raíz</span><span id="raiz">0</span></div>
+                <div class="dato"><span>Raíz</span><span id="raiz" style="color: #e63946;">0</span></div>
                 <div class="dato"><span>Converge</span><span id="conv">-</span></div>
             </div>
 
-            <div id="grafico-raices" class="card"><div id="ggb-element"></div></div>
             <div id="panel-sistemas" class="card" style="display:none;"></div>
+
             <div id="panel-regresiones" class="card" style="display:none;">
-                <h3 style="color: #1d3557; margin-top: 0;">Resultados de Regresión</h3>
-                <div class="dato"><span>Función f(x)</span><span id="funcRegresion" style="font-weight: bold;">-</span></div>
+                <h3 id="tituloMetodoReg" style="color: #1d3557; margin-top: 0; border-bottom: 1px solid #eee; padding-bottom: 10px;">Resultados Regresión</h3>
+                <div class="dato"><span>Función obtenida</span><span id="funcRegresion" style="font-family: monospace; color: #457b9d;">-</span></div>
                 <div class="dato"><span>Correlación (r)</span><span id="rRegresion">-</span></div>
                 <div class="dato"><span>Efectividad</span><span id="efectividadRegresion">-</span></div>
+            </div>
+
+            <div id="card-integracion" class="card" style="display:none; background-color: #1d3557; color: white;">
+                <h3 id="tituloMetodoInt" style="color: white; border-bottom: 1px solid rgba(255,255,255,0.3); padding-bottom: 10px;">Método Integración</h3>
+                <p id="fxInt" style="background: rgba(0,0,0,0.2); padding: 10px; border-radius: 5px; font-family: monospace;">f(x)</p>
+                <div class="dato" style="border-bottom-color: rgba(255,255,255,0.1);"><span>Límite Inferior (Xi)</span><span id="resXiInt">0</span></div>
+                <div class="dato" style="border-bottom-color: rgba(255,255,255,0.1);"><span>Límite Superior (Xd)</span><span id="resXdInt">0</span></div>
+                <div class="dato" id="datoNInt" style="display:none; border-bottom-color: rgba(255,255,255,0.1);"><span>Subintervalos (N)</span><span id="resNInt">0</span></div>
+
+                <div style="text-align: center; margin-top: 20px;">
+                    <span style="font-size: 14px; display: block; margin-bottom: 5px; color: #a8dadc;">ÁREA CALCULADA</span>
+                    <span id="areaInt" style="font-size: 32px; font-weight: bold; font-family: monospace; color: #e9c46a;">0.0000</span>
+                </div>
+            </div>
+
+            <div id="grafico-raices" class="grafico">
+                <div id="ggb-element"></div>
             </div>
         </div>
     </div>
 
     <script>
         let app;
-        // Corrección 2: Variables dinámicas para el sistema original
         let solucionOriginal = null;
         let ultimaSolucion = null;
         let puntosRegresion = [];
 
         window.onload = () => {
+            // 1. Buscamos el contenedor y medimos de qué tamaño es AHORA
+            const contenedor = document.getElementById('ggb-element');
+            const anchoInicial = contenedor.clientWidth || 800; // 800 es por si falla la medida
+            const altoInicial = contenedor.clientHeight || 400; // 400 por si falla la medida
+
             app = new GGBApplet({
                 appName: "graphing",
-                width: 600,
-                height: 400,
+                width: anchoInicial,   /* Le damos el tamaño que acabamos de medir */
+                height: altoInicial,
                 showToolBar: false,
                 showAlgebraInput: false,
-                showMenuBar: false
+                showMenuBar: false,
+
+                // 2. Esta es la clave: se ejecuta SOLO cuando GeoGebra ya está listo
+                appletOnLoad: function (api) {
+                    ajustarTamañoGrafico(api);
+                }
             }, true);
 
             app.inject('ggb-element');
-            crearGrillaMatriz();
+
+            // Si tienes tu función crearGrillaMatriz(), llámala aquí o dentro de appletOnLoad
+            // crearGrillaMatriz(); 
         };
 
+        // 3. La función de ajuste automático
+        function ajustarTamañoGrafico(api) {
+            const contenedor = document.getElementById('ggb-element');
+            if (!contenedor) return;
+
+            const observer = new ResizeObserver(entries => {
+                for (let entry of entries) {
+                    let width = entry.contentRect.width;
+                    let height = entry.contentRect.height;
+
+                    // Solo redimensiona si el tamaño es mayor a 0 (para evitar que desaparezca de nuevo)
+                    if (width > 0 && height > 0) {
+                        api.setSize(width, height);
+                    }
+                }
+            });
+
+            observer.observe(contenedor);
+        }
+
         function agregarPunto() {
-            let x = parseFloat(
-                document.getElementById("regX")
-                    .value.replace(",", ".")
-            );
-
-            let y = parseFloat(
-                document.getElementById("regY")
-                    .value.replace(",", ".")
-            );
-
-            if (isNaN(x) || isNaN(y)) {
-                alert("Punto inválido");
-                return;
-            }
-
+            let x = parseFloat(document.getElementById("regX").value.replace(",", "."));
+            let y = parseFloat(document.getElementById("regY").value.replace(",", "."));
+            if (isNaN(x) || isNaN(y)) return alert("Punto inválido");
             puntosRegresion.push([x, y]);
-
             actualizarListaPuntos();
+            document.getElementById("regX").value = "";
+            document.getElementById("regY").value = "";
+            document.getElementById("regX").focus();
         }
 
         function actualizarListaPuntos() {
-            const lista =
-                document.getElementById("listaPuntos");
-
+            const lista = document.getElementById("listaPuntos");
             lista.innerHTML = "";
-
             puntosRegresion.forEach((p, i) => {
-                const op =
-                    document.createElement("option");
-
-                op.text =
-                    `${i + 1}: (${p[0]}, ${p[1]})`;
-
+                const op = document.createElement("option");
+                op.text = `${i + 1}: (${p[0]}, ${p[1]})`;
                 lista.add(op);
             });
-
             graficarPuntos();
         }
 
         function graficarPuntos() {
             let ggb = app.getAppletObject();
-
             if (!ggb) return;
-
             ggb.reset();
-
             puntosRegresion.forEach((p, i) => {
-                ggb.evalCommand(
-                    `P${i}=(${p[0]},${p[1]})`
-                );
+                ggb.evalCommand(`P${i}=(${p[0]},${p[1]})`);
             });
         }
 
@@ -299,71 +372,72 @@
             if (lista.selectedIndex === -1) return alert("Selecciona un punto para borrar");
             puntosRegresion.splice(lista.selectedIndex, 1);
             actualizarListaPuntos();
-            graficarPuntos();
         }
 
         function limpiarPuntos() {
             puntosRegresion = [];
             actualizarListaPuntos();
-            graficarPuntos();
+        }
+
+        function verificarIntegracionMultiple() {
+            const metodo = document.getElementById("metodoIntegracion").value;
+            const esMultiple = metodo.includes("Multiple") || metodo.includes("Combinado");
+            document.getElementById("contenedorNInt").style.display = esMultiple ? "block" : "none";
         }
 
         function cambiarUnidad() {
-
-            const unidad =
-                document.getElementById("unidadSeleccionada").value;
+            const unidad = document.getElementById("unidadSeleccionada").value;
 
             // Ocultar todo
             document.getElementById("form-raices").style.display = "none";
             document.getElementById("form-sistemas").style.display = "none";
             document.getElementById("form-regresiones").style.display = "none";
+            document.getElementById("form-integracion").style.display = "none";
 
             document.getElementById("card-raices").style.display = "none";
-            document.getElementById("grafico-raices").style.display = "none";
             document.getElementById("panel-sistemas").style.display = "none";
             document.getElementById("panel-regresiones").style.display = "none";
+            document.getElementById("card-integracion").style.display = "none";
+            document.getElementById("grafico-raices").style.display = "none";
+            document.getElementById("panelConfiguracion").style.display = unidad === "integracion" ? "none" : "block";
 
+            if (app && app.getAppletObject()) app.getAppletObject().reset();
+
+            // Mostrar según selección
             if (unidad === "raices") {
-
                 document.getElementById("form-raices").style.display = "block";
                 document.getElementById("card-raices").style.display = "block";
                 document.getElementById("grafico-raices").style.display = "flex";
-
-                document.getElementById("tituloPrincipal").innerText =
-                    "UNIDAD 1 – RAÍCES DE FUNCIONES";
+                document.getElementById("tituloPrincipal").innerText = "UNIDAD 1 – RAÍCES DE FUNCIONES";
             }
-
             else if (unidad === "sistemas") {
-
                 document.getElementById("form-sistemas").style.display = "block";
-                document.getElementById("panel-sistemas").style.display = "flex";
-
-                document.getElementById("tituloPrincipal").innerText =
-                    "UNIDAD 2 – SISTEMAS DE ECUACIONES";
+                document.getElementById("panel-sistemas").style.display = "block";
+                document.getElementById("tituloPrincipal").innerText = "UNIDAD 2 – SISTEMAS DE ECUACIONES";
             }
-
             else if (unidad === "regresiones") {
-
                 document.getElementById("form-regresiones").style.display = "block";
                 document.getElementById("panel-regresiones").style.display = "block";
                 document.getElementById("grafico-raices").style.display = "flex";
-
-                document.getElementById("tituloPrincipal").innerText =
-                    "UNIDAD 3 – REGRESIONES";
+                document.getElementById("tituloPrincipal").innerText = "UNIDAD 3 – REGRESIONES";
+                graficarPuntos();
+            }
+            else if (unidad === "integracion") {
+                document.getElementById("form-integracion").style.display = "block";
+                document.getElementById("card-integracion").style.display = "block";
+                document.getElementById("grafico-raices").style.display = "flex";
+                document.getElementById("tituloPrincipal").innerText = "UNIDAD 4 – INTEGRACIÓN NUMÉRICA";
+                verificarIntegracionMultiple();
             }
         }
 
         function crearGrillaMatriz() {
             const n = parseInt(document.getElementById("nMatriz").value);
             const contenedor = document.getElementById("contenedor-matriz");
-
-            // Reseteamos el sistema original guardado si cambian la dimensión
             solucionOriginal = null;
             ultimaSolucion = null;
-
             contenedor.style.gridTemplateColumns = `repeat(${n + 1}, 1fr)`;
             contenedor.innerHTML = "";
-
             for (let i = 0; i < n; i++) {
                 for (let j = 0; j <= n; j++) {
                     const input = document.createElement("input");
@@ -376,320 +450,141 @@
             }
         }
 
-        // Función para guardar dinámicamente la matriz original
-        function fijarOriginal() {
-            if (ultimaSolucion) {
-                solucionOriginal = [...ultimaSolucion];
-                alert("¡Sistema original guardado exitosamente!\n\nAhora modificá algunos decimales en la matriz y volvé a hacer clic en 'Calcular' para ver la tabla comparativa del condicionamiento.");
-
-                // Refrescamos el panel para que muestre que ya hay un original
-                document.getElementById("panel-sistemas").innerHTML = `
-                            <h2 style="color: #457b9d;">Sistema Original Guardado</h2>
-                            <p>Modificá la matriz y calculá de nuevo para comparar.</p>
-                        `;
-            }
-        }
-
         function calcular() {
+            const unidad = document.getElementById("unidadSeleccionada").value;
+            const iter = parseInt(document.getElementById("iteraciones").value) || 100;
+            const tol = parseFloat(document.getElementById("tolerancia").value.replace(",", ".")) || 0.0001;
+            const getNum = (id) => parseFloat(document.getElementById(id).value.replace(",", "."));
 
-            const unidad =
-                document.getElementById("unidadSeleccionada").value;
-
-            const iter =
-                parseInt(
-                    document.getElementById("iteraciones").value
-                );
-
-            const tol =
-                parseFloat(
-                    document.getElementById("tolerancia")
-                        .value
-                        .toString()
-                        .replace(",", ".")
-                );
-
-            // ==========================
-            // RAÍCES
-            // ==========================
             if (unidad === "raices") {
-
-                const getNum = (id) =>
-                    parseFloat(
-                        document.getElementById(id)
-                            .value
-                            .toString()
-                            .replace(",", ".")
-                    );
-
                 window.chrome.webview.postMessage({
                     tipoAccion: "RAICES",
-
-                    funcion:
-                        document.getElementById("funcion").value,
-
+                    funcion: document.getElementById("funcion").value,
                     xi: getNum("xi"),
                     xd: getNum("xd"),
-
                     iteraciones: iter,
                     tolerancia: tol,
-
-                    metodo:
-                        document.getElementById("metodo").value
+                    metodo: document.getElementById("metodo").value
                 });
             }
-
-            // ==========================
-            // SISTEMAS
-            // ==========================
             else if (unidad === "sistemas") {
-
-                const n =
-                    parseInt(
-                        document.getElementById("nMatriz").value
-                    );
-
+                const n = parseInt(document.getElementById("nMatriz").value);
                 let matriz = [];
-
                 for (let i = 0; i < n; i++) {
-
                     let fila = [];
-
                     for (let j = 0; j <= n; j++) {
-
-                        fila.push(
-                            parseFloat(
-                                document.getElementById(`m_${i}_${j}`)
-                                    .value
-                                    .replace(",", ".")
-                            )
-                        );
+                        fila.push(parseFloat(document.getElementById(`m_${i}_${j}`).value.replace(",", ".")));
                     }
-
                     matriz.push(fila);
                 }
-
                 window.chrome.webview.postMessage({
-
                     tipoAccion: "SISTEMA",
-
-                    metodo:
-                        document.getElementById("metodoMatriz")
-                            .value,
-
+                    metodo: document.getElementById("metodoMatriz").value,
                     dimension: n,
-
                     iteraciones: iter,
                     tolerancia: tol,
-
                     matriz: matriz
                 });
             }
-
-            // ==========================
-            // REGRESIONES
-            // ==========================
             else if (unidad === "regresiones") {
-
-                if (puntosRegresion.length < 2) {
-
-                    alert("Debe cargar al menos 2 puntos");
-                    return;
-                }
-
+                if (puntosRegresion.length < 2) return alert("Debe cargar al menos 2 puntos");
                 window.chrome.webview.postMessage({
-
                     tipoAccion: "REGRESION",
-
-                    metodo:
-                        document.getElementById(
-                            "metodoRegresion"
-                        ).value,
-
-                    grado:
-                        parseInt(
-                            document.getElementById(
-                                "gradoPolinomio"
-                            ).value
-                        ),
-
+                    metodo: document.getElementById("metodoRegresion").value,
+                    grado: parseInt(document.getElementById("gradoPolinomio").value),
                     tolerancia: tol,
-
                     puntos: puntosRegresion
+                });
+            }
+            else if (unidad === "integracion") {
+                window.chrome.webview.postMessage({
+                    tipoAccion: "INTEGRACION",
+                    metodo: document.getElementById("metodoIntegracion").value,
+                    funcion: document.getElementById("funcionInt").value,
+                    xi: getNum("xiInt"),
+                    xd: getNum("xdInt"),
+                    n: parseInt(document.getElementById("nInt").value) || 1
                 });
             }
         }
 
-        // =====================================================
         // RESPUESTA DESDE C#
-        // =====================================================
         window.chrome.webview.addEventListener('message', event => {
             const d = event.data;
 
             if (d.tipoAccion === "SISTEMA" || d.Soluciones) {
+                // ... Código original de sistemas ...
                 const sols = d.Soluciones || d.soluciones;
-                ultimaSolucion = [...sols]; // Guardamos la solución de esta corrida
-
-                const variables = ['x', 'y', 'z', 'w', 'v', 'u'];
-                let htmlSistemas = `<h2>Resultados: ${d.Metodo || d.metodo}</h2>`;
-
-                // Resultados Principales
+                let htmlSistemas = `<h3 style="color: #1d3557; margin-top: 0;">Resultados: ${d.Metodo || d.metodo}</h3>`;
                 sols.forEach((val, i) => {
-                    let varName = i < variables.length ? variables[i] : `x${i + 1}`;
-                    htmlSistemas += `
-                                <div class="var-row">
-                                    <span class="var-name">${varName.toUpperCase()}</span>
-                                    <span class="var-value">${val.toFixed(6)}</span>
-                                </div>
-                            `;
+                    htmlSistemas += `<div class="dato"><span>X${i + 1}</span><span style="font-family: monospace;">${val.toFixed(6)}</span></div>`;
                 });
-
-                // Info General
-                htmlSistemas += `
-                            <div class="sys-info" style="margin-bottom: 20px;">
-                                <strong>It:</strong> ${d.Iteraciones || d.iteraciones} |
-                                <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
-                                <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
-                            </div>
-                        `;
-
-                // Corrección 2: Lógica de la tabla NO hardcodeada
-                if (solucionOriginal && solucionOriginal.length === sols.length) {
-                    const originales = solucionOriginal;
-                    const modificados = sols;
-                    let diferenciaMaxima = 0;
-
-                    originales.forEach((valorOriginal, i) => {
-                        const diferencia = Math.abs(valorOriginal - modificados[i]);
-                        if (diferencia > diferenciaMaxima) {
-                            diferenciaMaxima = diferencia;
-                        }
-                    });
-
-                    let mensajeAnalisis = "";
-                    if (diferenciaMaxima > 1) {
-                        mensajeAnalisis = `El sistema presenta alta sensibilidad ante pequeñas perturbaciones, indicando un fuerte mal condicionamiento.`;
-                    } else if (diferenciaMaxima > 0.01) {
-                        mensajeAnalisis = `El sistema presenta sensibilidad moderada ante perturbaciones en los coeficientes.`;
-                    } else {
-                        mensajeAnalisis = `El sistema mantiene estabilidad numérica frente a pequeñas modificaciones.`;
-                    }
-
-                    htmlSistemas += `
-                                <h3 style="margin-top: 20px;">Análisis de Condicionamiento</h3>
-                                <table class="tabla-resumen">
-                                    <thead>
-                                        <tr>
-                                            <th>Variable</th>
-                                            <th>Original</th>
-                                            <th>Modificado</th>
-                                            <th>Diferencia</th>
-                                        </tr>
-                                    </thead>
-                                    <tbody>
-                            `;
-
-                    originales.forEach((valorOriginal, i) => {
-                        const valorModificado = modificados[i];
-                        const diferencia = Math.abs(valorOriginal - valorModificado);
-                        let varName = i < variables.length ? variables[i].toUpperCase() : `X${i + 1}`;
-
-                        htmlSistemas += `
-                                        <tr>
-                                            <td><strong>${varName}</strong></td>
-                                            <td>${valorOriginal.toFixed(6)}</td>
-                                            <td>${valorModificado.toFixed(6)}</td>
-                                            <td style="color: ${diferencia > 0.1 ? 'red' : 'green'}; font-weight: bold;">
-                                                ${diferencia.toFixed(6)}
-                                            </td>
-                                        </tr>
-                                `;
-                    });
-
-                    htmlSistemas += `
-                                    </tbody>
-                                </table>
-                                <div class="analisis" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #457b9d;">
-                                    ${mensajeAnalisis}
-                                </div>
-                                <button onclick="fijarOriginal()" style="margin-top:20px; font-size: 12px; cursor: pointer;">
-                                    Tomar este nuevo resultado como Original
-                                </button>
-                            `;
-                } else {
-                    // Si todavía NO guardaron un original, les damos la opción
-                    htmlSistemas += `
-                                <div style="margin-top: 25px; padding: 15px; border: 1px dashed #457b9d; border-radius: 5px; text-align: center;">
-                                    <p style="margin-bottom: 10px; font-size: 14px;">Para analizar el condicionamiento, guardá este resultado como original. Luego modificá la matriz levemente y volvé a Calcular.</p>
-                                    <button onclick="fijarOriginal()" style="cursor: pointer; background-color: #457b9d; color: white; border: none; padding: 8px 15px; border-radius: 4px;">Guardar como Sistema Original</button>
-                                </div>
-                            `;
-                }
-
                 document.getElementById("panel-sistemas").innerHTML = htmlSistemas;
-
             }
             else if (d.tipoAccion === "REGRESION") {
+                document.getElementById("tituloMetodoReg").innerText = d.metodo;
+                document.getElementById("funcRegresion").innerText = d.funcionObtenida || d.funcion;
+                document.getElementById("rRegresion").innerText = (d.correlacion || d.r).toFixed(2) + "%";
+                document.getElementById("efectividadRegresion").innerText = d.efectividad;
 
-                document.getElementById("funcRegresion").innerText =
-                    d.funcion;
+                graficarPuntos();
 
-                document.getElementById("rRegresion").innerText =
-                    d.r.toFixed(4) + "%";
+                let ggb = app.getAppletObject();
 
-                document.getElementById("efectividadRegresion").innerText =
-                    d.efectividad;
+                if (ggb) {
+                    let funcion = (d.funcionObtenida || d.funcion)
+                        .replace(/,/g, ".")
+                        .replace("y =", "")
+                        .replace("y=", "")
+                        .trim();
 
+                    console.log("Función enviada:", funcion);
+
+                    ggb.evalCommand(`g(x) = ${funcion}`);
+                    ggb.setColor("g", 255, 0, 0);
+                    ggb.setLineThickness("g", 5);
+                    ggb.evalCommand("ZoomFit()");
+                }
+            }
+            else if (d.tipoAccion === "INTEGRACION") {
+                document.getElementById("tituloMetodoInt").innerText = d.metodo;
+                document.getElementById("fxInt").innerText = "f(x) = " + d.funcion;
+                document.getElementById("resXiInt").innerText = d.xi;
+                document.getElementById("resXdInt").innerText = d.xd;
+                document.getElementById("areaInt").innerText = isNaN(d.area) ? "Error" : d.area.toFixed(6);
+
+                const esMultiple = d.metodo.includes("Multiple") || d.metodo.includes("Combinado");
+                document.getElementById("datoNInt").style.display = esMultiple ? "flex" : "none";
+                document.getElementById("resNInt").innerText = d.n;
+
+                let ggb = app.getAppletObject();
+                if (ggb) {
+                    ggb.reset();
+                    let fx = d.funcion.replace(/,/g, ".");
+                    ggb.evalCommand(`f(x) = ${fx}`);
+                    ggb.evalCommand(`A = Integral(f, ${d.xi}, ${d.xd})`);
+                }
             }
             else {
+                document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
+                document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
+                document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
+                document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
+                document.getElementById("fx").innerText = "f(x) = " + d.funcion;
+                document.getElementById("raiz").innerText = d.raiz;
 
-                // RAICES
-
-                document.getElementById("tituloMetodo").innerText =
-                    d.Metodo || d.metodo;
-
-                document.getElementById("it").innerText =
-                    d.Iteraciones || d.iteraciones;
-
-                document.getElementById("error").innerText =
-                    (d.Error || d.error).toFixed(8);
-
-                document.getElementById("conv").innerText =
-                    (d.Converge || d.converge)
-                        ? "Sí"
-                        : "No";
-
-                document.getElementById("fx").innerText =
-                    d.funcion;
-
-                document.getElementById("raiz").innerText =
-                    d.raiz;
-
-                graficar(
-                    d.funcion,
-                    d.raiz,
-                    d.xi,
-                    d.xd,
-                    d.metodo
-                );
+                let ggb = app.getAppletObject();
+                if (ggb) {
+                    ggb.reset();
+                    let fx = d.funcion.replace(/,/g, ".");
+                    ggb.evalCommand(`f(x) = ${fx}`);
+                    if (d.raiz !== null && !isNaN(d.raiz)) ggb.evalCommand(`A = (${d.raiz}, 0)`);
+                    ggb.evalCommand(`B = (${d.xi}, 0)`);
+                    ggb.evalCommand(`C = (${d.xd}, 0)`);
+                    ggb.evalCommand(`Segment(B, C)`);
+                }
             }
         });
-
-        // =====================================================
-        // GEOGEBRA
-        // =====================================================
-        function graficar(funcion, raiz, xi, xd, metodo) {
-            let ggb = app.getAppletObject();
-            if (!ggb) return;
-            ggb.reset();
-            let fx = funcion.replace(/,/g, ".");
-            ggb.evalCommand(`f(x) = ${fx}`);
-            if (raiz !== null && !isNaN(raiz)) {
-                ggb.evalCommand(`A = (${raiz}, 0)`);
-            }
-            ggb.evalCommand(`B = (${xi}, 0)`);
-            ggb.evalCommand(`C = (${xd}, 0)`);
-            ggb.evalCommand(`Segment(B, C)`);
-        }
     </script>
 </body>
 </html>

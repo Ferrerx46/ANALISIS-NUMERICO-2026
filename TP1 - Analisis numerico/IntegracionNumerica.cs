@@ -77,39 +77,78 @@ namespace TP1___Analisis_numerico
             try
             {
                 EvaluadorFuncion evaluador = new EvaluadorFuncion(funcion);
+
                 double h = (xd - xi) / n;
-                double sumPares = 0, sumImpares = 0;
-                double resultado = 0;
-                bool simpson3_8Hecho = false;
 
-                for (int i = 1; i < n; i++)
+                // Si n es par, hacemos Simpson 1/3 múltiple normal
+                if (n % 2 == 0)
                 {
-                    // Si es impar y no hemos hecho Simpson 3/8 en los últimos 3 intervalos
-                    if (n % 2 != 0 && !simpson3_8Hecho)
+                    double sumaPares = 0;
+                    double sumaImpares = 0;
+
+                    for (int i = 1; i < n; i++)
                     {
-                        double nuevoXi = xi + h * (n - 3);
+                        double fx = evaluador.Evaluar(xi + i * h);
 
-                        // Calculamos directamente con la fórmula para no instanciar otro evaluador
-                        resultado = (3 * h / 8) * (evaluador.Evaluar(nuevoXi) + 3 * evaluador.Evaluar(nuevoXi + h) + 3 * evaluador.Evaluar(nuevoXi + 2 * h) + evaluador.Evaluar(xd));
-
-                        n = n - 3;
-                        xd = nuevoXi;
-                        simpson3_8Hecho = true;
+                        if (i % 2 == 0)
+                            sumaPares += fx;
+                        else
+                            sumaImpares += fx;
                     }
 
-                    if (i % 2 == 0)
-                    {
-                        sumPares += evaluador.Evaluar(xi + h * i);
-                    }
-                    else
-                    {
-                        sumImpares += evaluador.Evaluar(xi + h * i);
-                    }
+                    return (h / 3) *
+                           (
+                               evaluador.Evaluar(xi)
+                               + 4 * sumaImpares
+                               + 2 * sumaPares
+                               + evaluador.Evaluar(xd)
+                           );
                 }
 
-                // Sumamos el resultado del 1/3 Múltiple al que ya teníamos (si es que hicimos el 3/8)
-                resultado += (h / 3) * (evaluador.Evaluar(xi) + 4 * sumImpares + 2 * sumPares + evaluador.Evaluar(xd));
-                return resultado;
+                // ---------------------------
+                // n impar: combinar 1/3 y 3/8
+                // ---------------------------
+
+                int n13 = n - 3;
+
+                // Simpson 1/3 en los primeros n-3 intervalos
+                double xd13 = xi + n13 * h;
+
+                double sumaPares13 = 0;
+                double sumaImpares13 = 0;
+
+                for (int i = 1; i < n13; i++)
+                {
+                    double fx = evaluador.Evaluar(xi + i * h);
+
+                    if (i % 2 == 0)
+                        sumaPares13 += fx;
+                    else
+                        sumaImpares13 += fx;
+                }
+
+                double resultado13 =
+                    (h / 3) *
+                    (
+                        evaluador.Evaluar(xi)
+                        + 4 * sumaImpares13
+                        + 2 * sumaPares13
+                        + evaluador.Evaluar(xd13)
+                    );
+
+                // Simpson 3/8 en los últimos 3 intervalos
+                double xi38 = xd13;
+
+                double resultado38 =
+                    (3 * h / 8) *
+                    (
+                        evaluador.Evaluar(xi38)
+                        + 3 * evaluador.Evaluar(xi38 + h)
+                        + 3 * evaluador.Evaluar(xi38 + 2 * h)
+                        + evaluador.Evaluar(xd)
+                    );
+
+                return resultado13 + resultado38;
             }
             catch
             {
