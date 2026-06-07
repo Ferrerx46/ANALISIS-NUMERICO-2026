@@ -34,32 +34,43 @@ namespace Calculadora___Analisis_Numerico
 
         private void WebMessageReceived(object sender, Microsoft.Web.WebView2.Core.CoreWebView2WebMessageReceivedEventArgs e)
         {
-            System.Threading.Thread.CurrentThread.CurrentCulture = System.Globalization.CultureInfo.InvariantCulture;
+            System.Threading.Thread.CurrentThread.CurrentCulture =
+                System.Globalization.CultureInfo.InvariantCulture;
 
             var json = e.WebMessageAsJson;
             var doc = System.Text.Json.JsonDocument.Parse(json);
             var root = doc.RootElement;
 
-            // 1. Detectar qué tipo de operación es
-            string tipoAccion = root.TryGetProperty("tipoAccion", out var t) ? t.GetString() : "RAICES";
+            string tipoAccion =
+                root.TryGetProperty("tipoAccion", out var t)
+                ? t.GetString()
+                : "RAICES";
 
             var opcionesSer = new System.Text.Json.JsonSerializerOptions
             {
-                NumberHandling = System.Text.Json.Serialization.JsonNumberHandling.AllowNamedFloatingPointLiterals
+                NumberHandling =
+                    System.Text.Json.Serialization.JsonNumberHandling
+                    .AllowNamedFloatingPointLiterals
             };
 
+            // =====================================================
+            // UNIDAD 2 - SISTEMAS
+            // =====================================================
             if (tipoAccion == "SISTEMA")
             {
-                // --- LÓGICA UNIDAD 2: SISTEMAS ---
                 int dim = root.GetProperty("dimension").GetInt32();
                 string metodo = root.GetProperty("metodo").GetString();
 
-                // CAPTURA DE VALORES DESDE EL FRONT
-                // Si por alguna razón no vinieran, les dejamos un valor por defecto (Fallback)
-                int iteracionesMax = root.TryGetProperty("iteraciones", out var iProp) ? iProp.GetInt32() : 100;
-                double tolerancia = root.TryGetProperty("tolerancia", out var tProp) ? tProp.GetDouble() : 0.0001;
+                int iteracionesMax =
+                    root.TryGetProperty("iteraciones", out var iProp)
+                    ? iProp.GetInt32()
+                    : 100;
 
-                // Parsear la matriz desde el JSON
+                double tolerancia =
+                    root.TryGetProperty("tolerancia", out var tProp)
+                    ? tProp.GetDouble()
+                    : 0.0001;
+
                 double[,] matrizCsharp = new double[dim, dim + 1];
                 var matrizJson = root.GetProperty("matriz");
 
@@ -67,7 +78,8 @@ namespace Calculadora___Analisis_Numerico
                 {
                     for (int j = 0; j <= dim; j++)
                     {
-                        matrizCsharp[i, j] = matrizJson[i][j].GetDouble();
+                        matrizCsharp[i, j] =
+                            matrizJson[i][j].GetDouble();
                     }
                 }
 
@@ -76,18 +88,22 @@ namespace Calculadora___Analisis_Numerico
 
                 if (metodo == "GaussJordan")
                 {
-                    resultadoSist = mSistemas.ResolverGaussJordan(matrizCsharp, dim);
+                    resultadoSist =
+                        mSistemas.ResolverGaussJordan(
+                            matrizCsharp,
+                            dim
+                        );
                 }
-                else // Gauss-Seidel
+                else
                 {
-                    // Usamos la variable 'tolerancia' que viene del Front-End
-                    resultadoSist = mSistemas.ResolverGaussSeidel(matrizCsharp, dim, tolerancia);
-
-                    // NOTA: Si querés limitar las iteraciones con 'iteracionesMax' en Gauss-Seidel, 
-                    // vas a tener que pasarle esa variable a tu método en la clase SistemasDeEcuaciones.
+                    resultadoSist =
+                        mSistemas.ResolverGaussSeidel(
+                            matrizCsharp,
+                            dim,
+                            tolerancia
+                        );
                 }
 
-                // Creamos un objeto anónimo para meterle el "tipoAccion" y que el Front sepa procesarlo sin fallar
                 var respuestaSistema = new
                 {
                     tipoAccion = "SISTEMA",
@@ -99,31 +115,132 @@ namespace Calculadora___Analisis_Numerico
                     mensaje = resultadoSist.Mensaje
                 };
 
-                // Enviamos la respuesta de vuelta
                 webView21.CoreWebView2.PostWebMessageAsJson(
-                    System.Text.Json.JsonSerializer.Serialize(respuestaSistema, opcionesSer)
+                    System.Text.Json.JsonSerializer.Serialize(
+                        respuestaSistema,
+                        opcionesSer
+                    )
                 );
             }
+
+            // =====================================================
+            // UNIDAD 3 - REGRESIONES
+            // =====================================================
+            else if (tipoAccion == "REGRESION")
+            {
+                string metodo =
+                    root.GetProperty("metodo").GetString();
+
+                int grado =
+                    root.GetProperty("grado").GetInt32();
+
+                double tolerancia =
+                    root.GetProperty("tolerancia").GetDouble();
+
+                var puntosJson =
+                    root.GetProperty("puntos");
+
+                List<double[]> puntos =
+                    new List<double[]>();
+
+                foreach (var punto in puntosJson.EnumerateArray())
+                {
+                    puntos.Add(new double[]
+                    {
+                punto[0].GetDouble(),
+                punto[1].GetDouble()
+                    });
+                }
+
+                Regresiones reg = new Regresiones();
+
+                ResultadoRegresion resultado;
+
+                if (metodo == "Lineal")
+                {
+                    resultado =
+                        reg.CalcularRegresionLineal(
+                            puntos,
+                            tolerancia
+                        );
+                }
+                else
+                {
+                    resultado =
+                        reg.CalcularRegresionPolinomial(
+                            grado,
+                            puntos,
+                            tolerancia
+                        );
+                }
+
+                var respuestaRegresion = new
+                {
+                    tipoAccion = "REGRESION",
+                    funcion = resultado.Funcion,
+                    r = resultado.R,
+                    efectividad = resultado.Efectividad
+                };
+
+                webView21.CoreWebView2.PostWebMessageAsJson(
+                    System.Text.Json.JsonSerializer.Serialize(
+                        respuestaRegresion,
+                        opcionesSer
+                    )
+                );
+            }
+
+            // =====================================================
+            // UNIDAD 1 - RAICES
+            // =====================================================
             else
             {
-                // --- LÓGICA UNIDAD 1: RAÍCES (Tu código original sin cambios) ---
-                string funcion = root.GetProperty("funcion").GetString();
-                double xi = root.GetProperty("xi").GetDouble();
-                double xd = root.GetProperty("xd").GetDouble();
-                int iteraciones = root.GetProperty("iteraciones").GetInt32();
-                double tolerancia = root.GetProperty("tolerancia").GetDouble();
-                string metodo = root.GetProperty("metodo").GetString();
+                string funcion =
+                    root.GetProperty("funcion").GetString();
+
+                double xi =
+                    root.GetProperty("xi").GetDouble();
+
+                double xd =
+                    root.GetProperty("xd").GetDouble();
+
+                int iteraciones =
+                    root.GetProperty("iteraciones").GetInt32();
+
+                double tolerancia =
+                    root.GetProperty("tolerancia").GetDouble();
+
+                string metodo =
+                    root.GetProperty("metodo").GetString();
 
                 ResultadoMetodo resultado;
-                if (metodo == "Biseccion" || metodo == "ReglaFalsa")
+
+                if (metodo == "Biseccion" ||
+                    metodo == "ReglaFalsa")
                 {
                     var m = new MetodosCerrados();
-                    resultado = m.Resolver(funcion, xi, xd, tolerancia, iteraciones, metodo);
+
+                    resultado = m.Resolver(
+                        funcion,
+                        xi,
+                        xd,
+                        tolerancia,
+                        iteraciones,
+                        metodo
+                    );
                 }
                 else
                 {
                     var m = new MetodosAbiertos();
-                    resultado = m.Resolver(funcion, xi, xd, tolerancia, iteraciones, metodo);
+
+                    resultado = m.Resolver(
+                        funcion,
+                        xi,
+                        xd,
+                        tolerancia,
+                        iteraciones,
+                        metodo
+                    );
                 }
 
                 var respuestaRaices = new
@@ -141,7 +258,10 @@ namespace Calculadora___Analisis_Numerico
                 };
 
                 webView21.CoreWebView2.PostWebMessageAsJson(
-                    System.Text.Json.JsonSerializer.Serialize(respuestaRaices, opcionesSer)
+                    System.Text.Json.JsonSerializer.Serialize(
+                        respuestaRaices,
+                        opcionesSer
+                    )
                 );
             }
         }

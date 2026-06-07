@@ -3,30 +3,111 @@
 <head>
     <meta charset="UTF-8">
     <title>Calculadora Numérica</title>
-    <link rel="stylesheet" href="styles.css">
     <script src="https://www.geogebra.org/apps/deployggb.js"></script>
     <style>
-        /* Corrección 1: Mejoramos el campo visual de la matriz */
+        /* Diseño General */
+        body {
+            font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif;
+            background-color: #f8f9fa;
+            margin: 0;
+            display: flex;
+            height: 100vh;
+            color: #333;
+        }
+
+        .container {
+            display: flex;
+            width: 100%;
+            height: 100%;
+        }
+
+        /* Sidebar (Menú) */
+        .sidebar {
+            width: 300px;
+            background: #fff;
+            padding: 20px;
+            border-right: 1px solid #dee2e6;
+            box-shadow: 2px 0 5px rgba(0,0,0,0.05);
+            overflow-y: auto;
+        }
+
+        h2, h3 {
+            color: #1d3557;
+            margin-top: 0;
+        }
+
+        select, input {
+            width: 100%;
+            padding: 10px;
+            margin: 8px 0;
+            border: 1px solid #ced4da;
+            border-radius: 5px;
+            box-sizing: border-box;
+        }
+
+        button {
+            width: 100%;
+            padding: 12px;
+            background-color: #457b9d;
+            color: white;
+            border: none;
+            border-radius: 5px;
+            cursor: pointer;
+            font-weight: bold;
+            margin-top: 10px;
+            transition: 0.3s;
+        }
+
+            button:hover {
+                background-color: #1d3557;
+            }
+
+        .btn-danger {
+            background-color: #e63946;
+            margin-top: 5px;
+        }
+
+            .btn-danger:hover {
+                background-color: #b92a36;
+            }
+
+        /* Main (Contenido) */
+        .main {
+            flex-grow: 1;
+            padding: 30px;
+            overflow-y: auto;
+        }
+
+        /* Componentes */
         .matrix-container {
             display: grid;
             gap: 5px;
             margin-top: 10px;
-            overflow-x: auto; /* Por si la matriz es muy grande */
         }
 
         .matrix-input {
-            width: 100%;
-            min-width: 70px; /* Asegura espacio para varios decimales */
-            padding: 8px 5px;
-            box-sizing: border-box;
-            font-size: 14px;
             text-align: center;
+            font-weight: bold;
         }
 
         .col-indep {
-            background-color: #f0f8ff;
-            border-left: 2px solid #333;
-            font-weight: bold;
+            background-color: #f1faee;
+            border: 1px solid #a8dadc;
+        }
+
+        .card {
+            background: white;
+            padding: 20px;
+            border-radius: 10px;
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+            margin-bottom: 20px;
+        }
+
+        .dato {
+            display: flex;
+            justify-content: space-between;
+            padding: 8px 0;
+            border-bottom: 1px solid #eee;
         }
 
         .tabla-resumen {
@@ -36,9 +117,13 @@
         }
 
             .tabla-resumen th, .tabla-resumen td {
-                border: 1px solid #ccc;
-                padding: 8px;
+                border: 1px solid #dee2e6;
+                padding: 10px;
                 text-align: center;
+            }
+
+            .tabla-resumen th {
+                background-color: #f8f9fa;
             }
     </style>
 </head>
@@ -50,14 +135,16 @@
             <select id="unidadSeleccionada" onchange="cambiarUnidad()">
                 <option value="raices">Unidad 1: Raíces</option>
                 <option value="sistemas">Unidad 2: Sistemas (Matrices)</option>
+                <option value="regresiones">Unidad 3: Regresiones</option>
+                <option value="integracion">Unidad 4: Integración Numérica</option>
             </select>
 
             <hr>
 
-            <label>Iteraciones / Tolerancia</label>
+            <label>Configuración</label>
             <div style="display:flex; gap:5px">
-                <input type="text" id="iteraciones" value="100" style="width:50%">
-                <input type="text" id="tolerancia" step="0.0001" value="0.0001" style="width:50%">
+                <input type="text" id="iteraciones" value="100" placeholder="Iteraciones">
+                <input type="text" id="tolerancia" value="0.0001" placeholder="Tolerancia">
             </div>
 
             <div id="form-raices">
@@ -70,10 +157,10 @@
                 </select>
                 <label>Función</label>
                 <input type="text" id="funcion" placeholder="x*x - 4">
-                <label>Xi / Xd</label>
+                <label>Intervalo [Xi, Xd]</label>
                 <div style="display:flex; gap:5px">
-                    <input type="text" id="xi" value="-5" style="width:50%">
-                    <input type="text" id="xd" value="5" style="width:50%">
+                    <input type="text" id="xi" value="-5">
+                    <input type="text" id="xd" value="5">
                 </div>
             </div>
 
@@ -85,35 +172,49 @@
                 </select>
                 <label>Dimensión (N)</label>
                 <input type="number" id="nMatriz" value="3" min="2" max="6" onchange="crearGrillaMatriz()">
-
-                <div id="contenedor-matriz" class="matrix-container">
-                </div>
+                <div id="contenedor-matriz" class="matrix-container"></div>
             </div>
 
-            <button onclick="calcular()" style="margin-top:20px;">Calcular</button>
+            <div id="form-regresiones" style="display:none;">
+                <label>Método</label>
+                <select id="metodoRegresion">
+                    <option value="Lineal">Lineal</option>
+                    <option value="Polinomial">Polinomial</option>
+                </select>
+                <label>Grado</label>
+                <input type="number" id="gradoPolinomio" value="1" min="1" max="6">
+                <label>Punto (X, Y)</label>
+                <input type="text" id="regX" placeholder="X">
+                <input type="text" id="regY" placeholder="Y">
+                <button type="button" onclick="agregarPunto()" style="background-color: #2a9d8f;">Agregar Punto</button>
+
+                <select id="listaPuntos" size="5" style="width:100%; margin-top:10px;"></select>
+
+                <button type="button" class="btn-danger" onclick="eliminarPunto()">Eliminar seleccionado</button>
+                <button type="button" class="btn-danger" onclick="limpiarPuntos()" style="background-color: #6c757d;">Limpiar todo</button>
+            </div>
+
+            <button onclick="calcular()" style="margin-top:20px; background-color: #e9c46a; color: #000;">CALCULAR</button>
         </div>
 
         <div class="main">
             <h1 id="tituloPrincipal">UNIDAD 1 – RAÍCES DE FUNCIONES</h1>
+            <div id="card-raices" class="card">
+                <h3 id="tituloMetodo">Método</h3>
+                <p id="fx">f(x)</p>
+                <div class="dato"><span>Iteraciones</span><span id="it">0</span></div>
+                <div class="dato"><span>Error</span><span id="error">0</span></div>
+                <div class="dato"><span>Raíz</span><span id="raiz">0</span></div>
+                <div class="dato"><span>Converge</span><span id="conv">-</span></div>
+            </div>
 
-            <div class="content">
-                <div class="card" id="card-raices">
-                    <h3 id="tituloMetodo">Método</h3>
-                    <p class="funcion" id="fx">f(x)</p>
-
-                    <div class="dato"><span>Iteraciones</span><span id="it">0</span></div>
-                    <div class="dato"><span>Error</span><span id="error">0</span></div>
-                    <div class="dato"><span>Raíz / Solución</span><span id="raiz">0</span></div>
-                    <div class="dato"><span>Converge</span><span id="conv">-</span></div>
-                </div>
-
-                <div class="grafico" id="grafico-raices">
-                    <div id="ggb-element"></div>
-                </div>
-
-                <div class="panel-sistemas" id="panel-sistemas" style="display:none;">
-                    <h2 style="color: #457b9d; font-weight: normal;">Esperando cálculo...</h2>
-                </div>
+            <div id="grafico-raices" class="card"><div id="ggb-element"></div></div>
+            <div id="panel-sistemas" class="card" style="display:none;"></div>
+            <div id="panel-regresiones" class="card" style="display:none;">
+                <h3 style="color: #1d3557; margin-top: 0;">Resultados de Regresión</h3>
+                <div class="dato"><span>Función f(x)</span><span id="funcRegresion" style="font-weight: bold;">-</span></div>
+                <div class="dato"><span>Correlación (r)</span><span id="rRegresion">-</span></div>
+                <div class="dato"><span>Efectividad</span><span id="efectividadRegresion">-</span></div>
             </div>
         </div>
     </div>
@@ -123,6 +224,7 @@
         // Corrección 2: Variables dinámicas para el sistema original
         let solucionOriginal = null;
         let ultimaSolucion = null;
+        let puntosRegresion = [];
 
         window.onload = () => {
             app = new GGBApplet({
@@ -138,23 +240,116 @@
             crearGrillaMatriz();
         };
 
+        function agregarPunto() {
+            let x = parseFloat(
+                document.getElementById("regX")
+                    .value.replace(",", ".")
+            );
+
+            let y = parseFloat(
+                document.getElementById("regY")
+                    .value.replace(",", ".")
+            );
+
+            if (isNaN(x) || isNaN(y)) {
+                alert("Punto inválido");
+                return;
+            }
+
+            puntosRegresion.push([x, y]);
+
+            actualizarListaPuntos();
+        }
+
+        function actualizarListaPuntos() {
+            const lista =
+                document.getElementById("listaPuntos");
+
+            lista.innerHTML = "";
+
+            puntosRegresion.forEach((p, i) => {
+                const op =
+                    document.createElement("option");
+
+                op.text =
+                    `${i + 1}: (${p[0]}, ${p[1]})`;
+
+                lista.add(op);
+            });
+
+            graficarPuntos();
+        }
+
+        function graficarPuntos() {
+            let ggb = app.getAppletObject();
+
+            if (!ggb) return;
+
+            ggb.reset();
+
+            puntosRegresion.forEach((p, i) => {
+                ggb.evalCommand(
+                    `P${i}=(${p[0]},${p[1]})`
+                );
+            });
+        }
+
+        function eliminarPunto() {
+            const lista = document.getElementById("listaPuntos");
+            if (lista.selectedIndex === -1) return alert("Selecciona un punto para borrar");
+            puntosRegresion.splice(lista.selectedIndex, 1);
+            actualizarListaPuntos();
+            graficarPuntos();
+        }
+
+        function limpiarPuntos() {
+            puntosRegresion = [];
+            actualizarListaPuntos();
+            graficarPuntos();
+        }
+
         function cambiarUnidad() {
-            const unidad = document.getElementById("unidadSeleccionada").value;
-            const raicesVis = unidad === "raices";
 
-            document.getElementById("form-raices").style.display = raicesVis ? "block" : "none";
-            document.getElementById("form-sistemas").style.display = raicesVis ? "none" : "block";
+            const unidad =
+                document.getElementById("unidadSeleccionada").value;
 
-            document.getElementById("card-raices").style.display = raicesVis ? "block" : "none";
-            document.getElementById("grafico-raices").style.display = raicesVis ? "flex" : "none";
-            document.getElementById("panel-sistemas").style.display = raicesVis ? "none" : "flex";
+            // Ocultar todo
+            document.getElementById("form-raices").style.display = "none";
+            document.getElementById("form-sistemas").style.display = "none";
+            document.getElementById("form-regresiones").style.display = "none";
 
-            document.getElementById("tituloPrincipal").innerText = raicesVis
-                ? "UNIDAD 1 – RAÍCES DE FUNCIONES"
-                : "UNIDAD 2 – SISTEMAS DE ECUACIONES";
+            document.getElementById("card-raices").style.display = "none";
+            document.getElementById("grafico-raices").style.display = "none";
+            document.getElementById("panel-sistemas").style.display = "none";
+            document.getElementById("panel-regresiones").style.display = "none";
 
-            if (!raicesVis) {
-                crearGrillaMatriz();
+            if (unidad === "raices") {
+
+                document.getElementById("form-raices").style.display = "block";
+                document.getElementById("card-raices").style.display = "block";
+                document.getElementById("grafico-raices").style.display = "flex";
+
+                document.getElementById("tituloPrincipal").innerText =
+                    "UNIDAD 1 – RAÍCES DE FUNCIONES";
+            }
+
+            else if (unidad === "sistemas") {
+
+                document.getElementById("form-sistemas").style.display = "block";
+                document.getElementById("panel-sistemas").style.display = "flex";
+
+                document.getElementById("tituloPrincipal").innerText =
+                    "UNIDAD 2 – SISTEMAS DE ECUACIONES";
+            }
+
+            else if (unidad === "regresiones") {
+
+                document.getElementById("form-regresiones").style.display = "block";
+                document.getElementById("panel-regresiones").style.display = "block";
+                document.getElementById("grafico-raices").style.display = "flex";
+
+                document.getElementById("tituloPrincipal").innerText =
+                    "UNIDAD 3 – REGRESIONES";
             }
         }
 
@@ -189,45 +384,137 @@
 
                 // Refrescamos el panel para que muestre que ya hay un original
                 document.getElementById("panel-sistemas").innerHTML = `
-                        <h2 style="color: #457b9d;">Sistema Original Guardado</h2>
-                        <p>Modificá la matriz y calculá de nuevo para comparar.</p>
-                    `;
+                            <h2 style="color: #457b9d;">Sistema Original Guardado</h2>
+                            <p>Modificá la matriz y calculá de nuevo para comparar.</p>
+                        `;
             }
         }
 
         function calcular() {
-            const unidad = document.getElementById("unidadSeleccionada").value;
-            const iter = parseInt(document.getElementById("iteraciones").value);
-            const tol = parseFloat(document.getElementById("tolerancia").value.toString().replace(",", "."));
 
+            const unidad =
+                document.getElementById("unidadSeleccionada").value;
+
+            const iter =
+                parseInt(
+                    document.getElementById("iteraciones").value
+                );
+
+            const tol =
+                parseFloat(
+                    document.getElementById("tolerancia")
+                        .value
+                        .toString()
+                        .replace(",", ".")
+                );
+
+            // ==========================
+            // RAÍCES
+            // ==========================
             if (unidad === "raices") {
-                const getNum = (id) => parseFloat(document.getElementById(id).value.toString().replace(",", "."));
+
+                const getNum = (id) =>
+                    parseFloat(
+                        document.getElementById(id)
+                            .value
+                            .toString()
+                            .replace(",", ".")
+                    );
+
                 window.chrome.webview.postMessage({
                     tipoAccion: "RAICES",
-                    funcion: document.getElementById("funcion").value,
+
+                    funcion:
+                        document.getElementById("funcion").value,
+
                     xi: getNum("xi"),
                     xd: getNum("xd"),
+
                     iteraciones: iter,
                     tolerancia: tol,
-                    metodo: document.getElementById("metodo").value
+
+                    metodo:
+                        document.getElementById("metodo").value
                 });
-            } else {
-                const n = parseInt(document.getElementById("nMatriz").value);
+            }
+
+            // ==========================
+            // SISTEMAS
+            // ==========================
+            else if (unidad === "sistemas") {
+
+                const n =
+                    parseInt(
+                        document.getElementById("nMatriz").value
+                    );
+
                 let matriz = [];
+
                 for (let i = 0; i < n; i++) {
+
                     let fila = [];
+
                     for (let j = 0; j <= n; j++) {
-                        fila.push(parseFloat(document.getElementById(`m_${i}_${j}`).value.replace(",", ".")));
+
+                        fila.push(
+                            parseFloat(
+                                document.getElementById(`m_${i}_${j}`)
+                                    .value
+                                    .replace(",", ".")
+                            )
+                        );
                     }
+
                     matriz.push(fila);
                 }
+
                 window.chrome.webview.postMessage({
+
                     tipoAccion: "SISTEMA",
-                    metodo: document.getElementById("metodoMatriz").value,
+
+                    metodo:
+                        document.getElementById("metodoMatriz")
+                            .value,
+
                     dimension: n,
+
                     iteraciones: iter,
                     tolerancia: tol,
+
                     matriz: matriz
+                });
+            }
+
+            // ==========================
+            // REGRESIONES
+            // ==========================
+            else if (unidad === "regresiones") {
+
+                if (puntosRegresion.length < 2) {
+
+                    alert("Debe cargar al menos 2 puntos");
+                    return;
+                }
+
+                window.chrome.webview.postMessage({
+
+                    tipoAccion: "REGRESION",
+
+                    metodo:
+                        document.getElementById(
+                            "metodoRegresion"
+                        ).value,
+
+                    grado:
+                        parseInt(
+                            document.getElementById(
+                                "gradoPolinomio"
+                            ).value
+                        ),
+
+                    tolerancia: tol,
+
+                    puntos: puntosRegresion
                 });
             }
         }
@@ -249,21 +536,21 @@
                 sols.forEach((val, i) => {
                     let varName = i < variables.length ? variables[i] : `x${i + 1}`;
                     htmlSistemas += `
-                            <div class="var-row">
-                                <span class="var-name">${varName.toUpperCase()}</span>
-                                <span class="var-value">${val.toFixed(6)}</span>
-                            </div>
-                        `;
+                                <div class="var-row">
+                                    <span class="var-name">${varName.toUpperCase()}</span>
+                                    <span class="var-value">${val.toFixed(6)}</span>
+                                </div>
+                            `;
                 });
 
                 // Info General
                 htmlSistemas += `
-                        <div class="sys-info" style="margin-bottom: 20px;">
-                            <strong>It:</strong> ${d.Iteraciones || d.iteraciones} |
-                            <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
-                            <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
-                        </div>
-                    `;
+                            <div class="sys-info" style="margin-bottom: 20px;">
+                                <strong>It:</strong> ${d.Iteraciones || d.iteraciones} |
+                                <strong>Error:</strong> ${(d.Error || d.error).toExponential(2)} <br>
+                                <strong>Converge:</strong> ${(d.Converge || d.converge) ? "Sí" : "No"}
+                            </div>
+                        `;
 
                 // Corrección 2: Lógica de la tabla NO hardcodeada
                 if (solucionOriginal && solucionOriginal.length === sols.length) {
@@ -288,18 +575,18 @@
                     }
 
                     htmlSistemas += `
-                            <h3 style="margin-top: 20px;">Análisis de Condicionamiento</h3>
-                            <table class="tabla-resumen">
-                                <thead>
-                                    <tr>
-                                        <th>Variable</th>
-                                        <th>Original</th>
-                                        <th>Modificado</th>
-                                        <th>Diferencia</th>
-                                    </tr>
-                                </thead>
-                                <tbody>
-                        `;
+                                <h3 style="margin-top: 20px;">Análisis de Condicionamiento</h3>
+                                <table class="tabla-resumen">
+                                    <thead>
+                                        <tr>
+                                            <th>Variable</th>
+                                            <th>Original</th>
+                                            <th>Modificado</th>
+                                            <th>Diferencia</th>
+                                        </tr>
+                                    </thead>
+                                    <tbody>
+                            `;
 
                     originales.forEach((valorOriginal, i) => {
                         const valorModificado = modificados[i];
@@ -307,47 +594,83 @@
                         let varName = i < variables.length ? variables[i].toUpperCase() : `X${i + 1}`;
 
                         htmlSistemas += `
-                                    <tr>
-                                        <td><strong>${varName}</strong></td>
-                                        <td>${valorOriginal.toFixed(6)}</td>
-                                        <td>${valorModificado.toFixed(6)}</td>
-                                        <td style="color: ${diferencia > 0.1 ? 'red' : 'green'}; font-weight: bold;">
-                                            ${diferencia.toFixed(6)}
-                                        </td>
-                                    </tr>
-                            `;
+                                        <tr>
+                                            <td><strong>${varName}</strong></td>
+                                            <td>${valorOriginal.toFixed(6)}</td>
+                                            <td>${valorModificado.toFixed(6)}</td>
+                                            <td style="color: ${diferencia > 0.1 ? 'red' : 'green'}; font-weight: bold;">
+                                                ${diferencia.toFixed(6)}
+                                            </td>
+                                        </tr>
+                                `;
                     });
 
                     htmlSistemas += `
-                                </tbody>
-                            </table>
-                            <div class="analisis" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #457b9d;">
-                                ${mensajeAnalisis}
-                            </div>
-                            <button onclick="fijarOriginal()" style="margin-top:20px; font-size: 12px; cursor: pointer;">
-                                Tomar este nuevo resultado como Original
-                            </button>
-                        `;
+                                    </tbody>
+                                </table>
+                                <div class="analisis" style="margin-top: 15px; padding: 10px; background-color: #f8f9fa; border-left: 4px solid #457b9d;">
+                                    ${mensajeAnalisis}
+                                </div>
+                                <button onclick="fijarOriginal()" style="margin-top:20px; font-size: 12px; cursor: pointer;">
+                                    Tomar este nuevo resultado como Original
+                                </button>
+                            `;
                 } else {
                     // Si todavía NO guardaron un original, les damos la opción
                     htmlSistemas += `
-                            <div style="margin-top: 25px; padding: 15px; border: 1px dashed #457b9d; border-radius: 5px; text-align: center;">
-                                <p style="margin-bottom: 10px; font-size: 14px;">Para analizar el condicionamiento, guardá este resultado como original. Luego modificá la matriz levemente y volvé a Calcular.</p>
-                                <button onclick="fijarOriginal()" style="cursor: pointer; background-color: #457b9d; color: white; border: none; padding: 8px 15px; border-radius: 4px;">Guardar como Sistema Original</button>
-                            </div>
-                        `;
+                                <div style="margin-top: 25px; padding: 15px; border: 1px dashed #457b9d; border-radius: 5px; text-align: center;">
+                                    <p style="margin-bottom: 10px; font-size: 14px;">Para analizar el condicionamiento, guardá este resultado como original. Luego modificá la matriz levemente y volvé a Calcular.</p>
+                                    <button onclick="fijarOriginal()" style="cursor: pointer; background-color: #457b9d; color: white; border: none; padding: 8px 15px; border-radius: 4px;">Guardar como Sistema Original</button>
+                                </div>
+                            `;
                 }
 
                 document.getElementById("panel-sistemas").innerHTML = htmlSistemas;
-            } else {
-                // ... Código de Raíces intacto ...
-                document.getElementById("tituloMetodo").innerText = d.Metodo || d.metodo;
-                document.getElementById("it").innerText = d.Iteraciones || d.iteraciones;
-                document.getElementById("error").innerText = (d.Error || d.error).toFixed(8);
-                document.getElementById("conv").innerText = (d.Converge || d.converge) ? "Sí" : "No";
-                document.getElementById("fx").innerText = d.funcion;
-                document.getElementById("raiz").innerText = d.raiz;
-                graficar(d.funcion, d.raiz, d.xi, d.xd, d.metodo);
+
+            }
+            else if (d.tipoAccion === "REGRESION") {
+
+                document.getElementById("funcRegresion").innerText =
+                    d.funcion;
+
+                document.getElementById("rRegresion").innerText =
+                    d.r.toFixed(4) + "%";
+
+                document.getElementById("efectividadRegresion").innerText =
+                    d.efectividad;
+
+            }
+            else {
+
+                // RAICES
+
+                document.getElementById("tituloMetodo").innerText =
+                    d.Metodo || d.metodo;
+
+                document.getElementById("it").innerText =
+                    d.Iteraciones || d.iteraciones;
+
+                document.getElementById("error").innerText =
+                    (d.Error || d.error).toFixed(8);
+
+                document.getElementById("conv").innerText =
+                    (d.Converge || d.converge)
+                        ? "Sí"
+                        : "No";
+
+                document.getElementById("fx").innerText =
+                    d.funcion;
+
+                document.getElementById("raiz").innerText =
+                    d.raiz;
+
+                graficar(
+                    d.funcion,
+                    d.raiz,
+                    d.xi,
+                    d.xd,
+                    d.metodo
+                );
             }
         });
 

@@ -56,10 +56,13 @@
   </ItemGroup>
   <ItemGroup>
     <Compile Include="EvaluadorFuncion.cs" />
+    <Compile Include="IntegracionNumerica.cs" />
     <Compile Include="MetodosAbiertos.cs" />
     <Compile Include="MetodosCerrados.cs" />
     <Compile Include="Properties\AssemblyInfo.cs" />
+    <Compile Include="Regresiones.cs" />
     <Compile Include="ResultadoMetodo.cs" />
+    <Compile Include="ResultadoRegresion.cs" />
     <Compile Include="ResultadoSistema.cs" />
     <Compile Include="SistemaDeEcuaciones.cs" />
   </ItemGroup>

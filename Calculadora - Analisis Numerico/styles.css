@@ -13,6 +13,8 @@
 /* SIDEBAR */
 .sidebar {
     width: 420px;
+    min-width: 420px; /* Asegura un ancho mínimo fijo */
+    flex-shrink: 0; /* ¡ESTA ES LA CLAVE! Evita que el flexbox lo "aplauda" */
     background: #ffffff;
     padding: 20px;
     box-shadow: 2px 0 10px rgba(0,0,0,0.1);
@@ -92,9 +94,11 @@
 /* MAIN */
 .main {
     flex: 1;
+    min-width: 0; /* Evita que el contenido interno empuje la barra lateral */
     padding: 30px;
     display: flex;
     flex-direction: column;
+    overflow-y: auto; /* Agregamos scroll vertical por si la pantalla es muy chica */
 }
 
     .main h1 {
@@ -156,6 +160,7 @@
 /* GRAFICO */
 .grafico {
     flex: 1;
+    min-width: 1; /* Vital para que GeoGebra se adapte y no desborde la pantalla */
     background: white;
     border-radius: 15px;
     padding: 15px;
@@ -165,9 +170,12 @@
     align-items: center;
 }
 
+/* NUEVA REGLA: Forzar responsividad en el iframe de GeoGebra */
 #ggb-element {
     border-radius: 10px;
     overflow: hidden;
+    width: 100% !important; /* Fuerza al iframe a tomar el ancho de su contenedor (.grafico) */
+    height: 100% !important; /* Fuerza al iframe a tomar el alto de su contenedor */
 }
 
 /* --- PANEL DE SISTEMAS COMPACTO (ROJO) --- */
