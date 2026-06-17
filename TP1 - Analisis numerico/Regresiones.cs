@@ -104,22 +104,27 @@ namespace TP1___Analisis_numerico
 
             for (int i = 0; i < vectorResultado.Length; i++)
             {
-                double ai = Math.Round(vectorResultado[i], 4);
+                double coef = vectorResultado[i];
+
+                // Usamos "G6" para mostrar hasta 6 dígitos significativos.
+                // Si el número es muy chico, usará automáticamente notación científica (ej: 2.5E-05)
+                string aiStr = Math.Abs(coef).ToString("G6");
 
                 if (i == 0)
                 {
-                    funcion = $"{ai}";
+                    funcion = $"{aiStr}";
                 }
                 else if (i == 1)
                 {
-                    funcion = $"{ai}x {signo} {funcion}";
+                    funcion = $"{aiStr}x {signo} {funcion}";
                 }
                 else
                 {
-                    funcion = $"{ai}x^{i} {signo} {funcion}";
+                    funcion = $"{aiStr}x^{i} {signo} {funcion}";
                 }
 
-                signo = (ai >= 0) ? "+" : "";
+                // Determinamos el signo para el PRÓXIMO término que se agregue a la izquierda
+                signo = (coef >= 0) ? "+" : "-";
             }
 
             // 4. Calcular el coeficiente de correlación (r) 
